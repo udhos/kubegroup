@@ -25,7 +25,7 @@ groupcachePort := ":5000"
 myURL, errURL = kubegroup.FindMyURL(groupcachePort)
 
 // 2. spawn groupcache peering server
-pool := groupcache.NewHTTPPool(myURL)
+pool := groupcache.NewHTTPPoolOpts(myURL, &groupcache.HTTPPoolOptions{})
 server := &http.Server{Addr: groupcachePort, Handler: pool}
 go func() {
     log.Printf("groupcache server: listening on %s", groupcachePort)
