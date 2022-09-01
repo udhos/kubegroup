@@ -1,4 +1,12 @@
+[![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/udhos/kubegroup/blob/main/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/udhos/kubegroup)](https://goreportcard.com/report/github.com/udhos/kubegroup)
+[![Go Reference](https://pkg.go.dev/badge/github.com/udhos/kubegroup.svg)](https://pkg.go.dev/github.com/udhos/kubegroup)
+
 # kubegroup
+
+[kubegroup](https://github.com/udhos/kubegroup) provides peer autodiscovery for pods running groupcache within a kubernetes cluster.
+
+Peer pods are automatically discovered by continuously watching for other pods with the same label `app=<value>` as in the current pod, in current pod's namespace.
 
 ## Usage
 
