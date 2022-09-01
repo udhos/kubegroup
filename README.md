@@ -4,13 +4,13 @@
 
 Import the package `github.com/udhos/kubegroup/kubegroup`.
 
-```
+```go
 import "github.com/udhos/kubegroup/kubegroup"
 ```
 
 Spawn a goroutine for `kubegroup.UpdatePeers(pool, groupcachePort)`.
 
-```
+```go
 groupcachePort := ":5000"
 
 // 1. get my groupcache URL
