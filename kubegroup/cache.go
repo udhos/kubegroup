@@ -1,3 +1,4 @@
+// Package kubegroup provides autodiscovery for groupcache.
 package kubegroup
 
 import (
