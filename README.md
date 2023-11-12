@@ -4,7 +4,7 @@
 
 # kubegroup
 
-[kubegroup](https://github.com/udhos/kubegroup) provides peer autodiscovery for pods running groupcache within a kubernetes cluster.
+[kubegroup](https://github.com/udhos/kubegroup) provides peer autodiscovery for pods running [groupcache](https://github.com/mailgun/groupcache) within a kubernetes cluster.
 
 Peer pods are automatically discovered by continuously watching for other pods with the same label `app=<value>` as in the current pod, in current pod's namespace.
 
