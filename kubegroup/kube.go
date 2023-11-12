@@ -228,11 +228,9 @@ func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[s
 
 	in := watcher.ResultChan()
 	for event := range in {
-		result, ok := action(table, event, myPodName)
-		if !ok {
-			continue
+		if result, ok := action(table, event, myPodName); ok {
+			out <- result
 		}
-		out <- result
 	}
 
 	return errWatchInputChannelClose
