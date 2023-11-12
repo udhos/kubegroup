@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -126,35 +127,6 @@ func (k *kubeClient) getPodInfo() (*podInfo, error) {
 
 func (k *kubeClient) listPodsAddresses() ([]string, error) {
 
-	/*
-		if !k.inCluster {
-			return []string{findMyAddr()}, nil
-		}
-
-		podInfo, errInfo := k.getPodInfo()
-		if errInfo != nil {
-			log.Printf("listPodsAddresses: pod info: %v", errInfo)
-			return nil, errInfo
-		}
-
-		pods, errList := k.clientset.CoreV1().Pods(podInfo.namespace).List(context.TODO(), podInfo.listOptions)
-		if errList != nil {
-			log.Printf("listPodsAddresses: list pods: %v", errList)
-			return nil, errList
-		}
-
-		var podList []string
-
-		for _, p := range pods.Items {
-			if isPodReady(&p) {
-				addr := p.Status.PodIP
-				podList = append(podList, addr)
-			}
-		}
-
-		return podList, nil
-	*/
-
 	table, errTable := k.getPodTable()
 	if errTable != nil {
 		log.Printf("listPodsAddresses: pod table: %v", errTable)
@@ -248,53 +220,78 @@ var errWatchInputChannelClose = errors.New("watchOnce: input channel has been cl
 func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[string]string) error {
 	myPodName := info.name
 
-	watch, errWatch := k.clientset.CoreV1().Pods(info.namespace).Watch(context.TODO(), info.listOptions)
+	watcher, errWatch := k.clientset.CoreV1().Pods(info.namespace).Watch(context.TODO(), info.listOptions)
 	if errWatch != nil {
 		log.Printf("watchOnce: watch: %v", errWatch)
 		return errWatch
 	}
 
-	in := watch.ResultChan()
+	in := watcher.ResultChan()
 	for event := range in {
-		pod, ok := event.Object.(*corev1.Pod)
+		result, ok := action(table, event, myPodName)
 		if !ok {
-			log.Printf("watchOnce: unexpected event object: %v", event.Object)
 			continue
 		}
-
-		name := pod.Name
-
-		addr := pod.Status.PodIP
-		if addr == "" {
-			// some going down events don't report pod address, so we retrieve it from a local table
-			addr = table[name]
-		}
-
-		ready := isPodReady(pod)
-
-		log.Printf("watchOnce: event=%s pod=%s addr=%s ready=%t",
-			event.Type, name, addr, ready)
-
-		if name == myPodName {
-			continue // ignore my own pod
-		}
-
-		if event.Type == "DELETED" {
-			// pod name/address no longer needed
-			delete(table, name)
-		}
-
-		if addr == "" {
-			continue // ignore empty address
-		}
-
-		// record address for future going down events that don't report pod address
-		table[name] = addr
-
-		out <- podAddress{address: addr, added: ready}
+		out <- result
 	}
 
 	return errWatchInputChannelClose
+}
+
+func action(table map[string]string, event watch.Event, myPodName string) (podAddress, bool) {
+	const me = "action"
+
+	var result podAddress
+
+	pod, ok := event.Object.(*corev1.Pod)
+	if !ok {
+		log.Printf("%s: unexpected event object: %v", me, event.Object)
+		return result, false
+	}
+
+	if pod == nil {
+		log.Printf("%s: unexpected nil pod from event object: %v", me, event.Object)
+		return result, false
+	}
+
+	name := pod.ObjectMeta.Name
+
+	addr := pod.Status.PodIP
+	if addr == "" {
+		// some going down events don't report pod address, so we retrieve it from a local table
+		addr = table[name]
+	}
+
+	ready := isPodReady(pod)
+
+	if name == myPodName {
+		log.Printf("%s: event=%s pod=%s addr=%s ready=%t: ignoring my own pod",
+			me, event.Type, name, addr, ready)
+		return result, false // ignore my own pod
+	}
+
+	if event.Type == "DELETED" {
+		// pod name/address no longer needed
+		log.Printf("%s: event=%s pod=%s addr=%s ready=%t: removing address from helper table",
+			me, event.Type, name, addr, ready)
+		delete(table, name)
+	}
+
+	if addr == "" {
+		log.Printf("%s: event=%s pod=%s addr=%s ready=%t: ignoring, cannot add/remove unknown address",
+			me, event.Type, name, addr, ready)
+		return result, false // ignore empty address
+	}
+
+	log.Printf("%s: event=%s pod=%s addr=%s ready=%t: success: sending update",
+		me, event.Type, name, addr, ready)
+
+	// record address for future going down events that don't report pod address
+	table[name] = addr
+
+	result.address = addr
+	result.added = ready
+	return result, true
 }
 
 type podAddress struct {
