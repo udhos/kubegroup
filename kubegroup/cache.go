@@ -47,11 +47,29 @@ func buildURL(addr, groupcachePort string) string {
 	return "http://" + addr + groupcachePort
 }
 
+// Options specifies options for UpdatePeers.
+type Options struct {
+	Pool           *groupcache.HTTPPool
+	GroupCachePort string
+
+	// PodLabelKey is label key to match peer PODs, if unspecified defaults to "app".
+	// Example: If PODs are labeled as app=my-app-name, you could either set PodLabelKey
+	// to "app" or leave it empty (since "app" is the default value).
+	PodLabelKey string
+
+	// PodLabelValue is label value to match peer PODs, if unspecified defaults to
+	// current POD label value for PodLabelKey.
+	// Example: If PODs are labeled as app=my-app-name, you could either set PodLabelValue
+	// to "my-app-name" or leave it empty (since by default PodLabelValue takes its value
+	// from the PodLabelKey key).
+	PodLabelValue string
+}
+
 // UpdatePeers continuously updates groupcache peers.
 // groupcachePort example: ":5000".
-func UpdatePeers(pool *groupcache.HTTPPool, groupcachePort string) {
+func UpdatePeers(options Options) {
 
-	kc, errClient := newKubeClient()
+	kc, errClient := newKubeClient(options.PodLabelKey, options.PodLabelValue)
 	if errClient != nil {
 		log.Fatalf("updatePeers: kube client: %v", errClient)
 	}
@@ -81,20 +99,20 @@ func UpdatePeers(pool *groupcache.HTTPPool, groupcachePort string) {
 	peers := map[string]bool{}
 
 	for _, addr := range addresses {
-		url := buildURL(addr, groupcachePort)
+		url := buildURL(addr, options.GroupCachePort)
 		peers[url] = true
 	}
 
 	keys := maps.Keys(peers)
 	log.Printf("updatePeers: initial peers: %v", keys)
-	pool.Set(keys...)
+	options.Pool.Set(keys...)
 
 	ch := make(chan podAddress)
 
 	go watchPeers(kc, ch)
 
 	for n := range ch {
-		url := buildURL(n.address, groupcachePort)
+		url := buildURL(n.address, options.GroupCachePort)
 		log.Printf("updatePeers: peer=%s added=%t current peers: %v",
 			url, n.added, maps.Keys(peers))
 		count := len(peers)
@@ -108,7 +126,7 @@ func UpdatePeers(pool *groupcache.HTTPPool, groupcachePort string) {
 		}
 		keys := maps.Keys(peers)
 		log.Printf("updatePeers: updating peers: %v", keys)
-		pool.Set(keys...)
+		options.Pool.Set(keys...)
 	}
 
 	log.Printf("updatePeers: channel has been closed, nothing to do, exiting")

@@ -8,7 +8,7 @@
 
 Peer pods are automatically discovered by continuously watching for other pods with the same label `app=<value>` as in the current pod, in current pod's namespace.
 
-## Usage
+# Usage
 
 Import the package `github.com/udhos/kubegroup/kubegroup`.
 
@@ -34,7 +34,18 @@ go func() {
 }()
 
 // 3. spawn peering autodiscovery
-go kubegroup.UpdatePeers(pool, groupcachePort)
+options := kubegroup.Options{
+    Pool:           pool,
+    GroupCachePort: app.groupCachePort,
+    //PodLabelKey:    "app",         // default is "app"
+    //PodLabelValue:  "my-app-name", // default is current PODs label value for label key
+}
+
+go kubegroup.UpdatePeers(options)
 
 // 4. create groupcache groups, etc: groupOne := groupcache.NewGroup()
 ```
+
+# Example
+
+See [./examples/kubegroup-example](./examples/kubegroup-example)

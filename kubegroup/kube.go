@@ -17,9 +17,11 @@ import (
 )
 
 type kubeClient struct {
-	clientset *kubernetes.Clientset
-	inCluster bool
-	podCache  *podInfo
+	clientset  *kubernetes.Clientset
+	inCluster  bool
+	podCache   *podInfo
+	labelKey   string
+	labelValue string
 }
 
 type podInfo struct {
@@ -28,9 +30,12 @@ type podInfo struct {
 	listOptions metav1.ListOptions
 }
 
-func newKubeClient() (kubeClient, error) {
+func newKubeClient(labelKey, labelValue string) (kubeClient, error) {
 
-	kc := kubeClient{}
+	kc := kubeClient{
+		labelKey:   labelKey,
+		labelValue: labelValue,
+	}
 
 	config, errConfig := rest.InClusterConfig()
 	if errConfig != nil {
@@ -109,9 +114,21 @@ func (k *kubeClient) getPodInfo() (*podInfo, error) {
 	// get namespace from my pod
 	namespace := pod.ObjectMeta.Namespace
 
-	// get label from my pod
-	labelKey := "app"
-	labelValue := pod.ObjectMeta.Labels[labelKey]
+	// get label to match peer PODs
+
+	var labelKey string
+	if k.labelKey == "" {
+		labelKey = "app" // default label key
+	} else {
+		labelKey = k.labelKey
+	}
+
+	var labelValue string
+	if k.labelValue == "" {
+		labelValue = pod.ObjectMeta.Labels[labelKey] // default label value
+	} else {
+		labelValue = k.labelValue
+	}
 
 	// search other pods using label from my pod
 	listOptions := metav1.ListOptions{LabelSelector: labelKey + "=" + labelValue}
