@@ -285,10 +285,8 @@ func action(table map[string]string, event watch.Event, myPodName string) (podAd
 		return result, false // ignore my own pod
 	}
 
-	if event.Type == "DELETED" {
+	if event.Type == watch.Deleted {
 		// pod name/address no longer needed
-		log.Printf("%s: event=%s pod=%s addr=%s ready=%t: removing address from helper table",
-			me, event.Type, name, addr, ready)
 		delete(table, name)
 	}
 
@@ -301,8 +299,10 @@ func action(table map[string]string, event watch.Event, myPodName string) (podAd
 	log.Printf("%s: event=%s pod=%s addr=%s ready=%t: success: sending update",
 		me, event.Type, name, addr, ready)
 
-	// record address for future going down events that don't report pod address
-	table[name] = addr
+	if event.Type != watch.Deleted {
+		// record address for future going down events that don't report pod address
+		table[name] = addr
+	}
 
 	result.address = addr
 	result.added = ready
