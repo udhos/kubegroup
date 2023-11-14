@@ -3,7 +3,6 @@ package kubegroup
 import (
 	"context"
 	"errors"
-	"log"
 	"os"
 	"time"
 
@@ -17,11 +16,10 @@ import (
 )
 
 type kubeClient struct {
-	clientset  *kubernetes.Clientset
-	inCluster  bool
-	podCache   *podInfo
-	labelKey   string
-	labelValue string
+	clientset *kubernetes.Clientset
+	inCluster bool
+	podCache  *podInfo
+	options   Options
 }
 
 type podInfo struct {
@@ -30,25 +28,24 @@ type podInfo struct {
 	listOptions metav1.ListOptions
 }
 
-func newKubeClient(labelKey, labelValue string) (kubeClient, error) {
+func newKubeClient(options Options) (kubeClient, error) {
 
 	kc := kubeClient{
-		labelKey:   labelKey,
-		labelValue: labelValue,
+		options: options,
 	}
 
 	config, errConfig := rest.InClusterConfig()
 	if errConfig != nil {
-		log.Printf("running OUT-OF-CLUSTER: %v", errConfig)
+		options.Errorf("running OUT-OF-CLUSTER: %v", errConfig)
 		return kc, nil
 	}
 
-	log.Printf("running IN-CLUSTER")
+	options.Debugf("running IN-CLUSTER")
 	kc.inCluster = true
 
 	clientset, errClientset := kubernetes.NewForConfig(config)
 	if errClientset != nil {
-		log.Fatalf("kube clientset error: %v", errClientset)
+		options.Errorf("kube clientset error: %v", errClientset)
 		return kc, errClientset
 	}
 
@@ -60,7 +57,7 @@ func newKubeClient(labelKey, labelValue string) (kubeClient, error) {
 func (k *kubeClient) getPodName() string {
 	host, errHost := os.Hostname()
 	if errHost != nil {
-		log.Printf("getPodName: hostname: %v", errHost)
+		k.options.Errorf("getPodName: hostname: %v", errHost)
 	}
 	return host
 }
@@ -73,13 +70,13 @@ func (k *kubeClient) getPod() (*corev1.Pod, error) {
 
 	namespace, errNs := findMyNamespace()
 	if errNs != nil {
-		log.Printf("getPod: could not find pod='%s' namespace: %v", podName, errNs)
+		k.options.Errorf("getPod: could not find pod='%s' namespace: %v", podName, errNs)
 		return nil, errNs
 	}
 
 	pod, errPod := k.clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if errPod != nil {
-		log.Printf("getPod: could not find pod name='%s': %v", podName, errPod)
+		k.options.Errorf("getPod: could not find pod name='%s': %v", podName, errPod)
 	}
 
 	return pod, errPod
@@ -107,7 +104,7 @@ func (k *kubeClient) getPodInfo() (*podInfo, error) {
 	// get my pod
 	pod, errPod := k.getPod()
 	if errPod != nil {
-		log.Printf("getPodInfo: could not find pod: %v", errPod)
+		k.options.Errorf("getPodInfo: could not find pod: %v", errPod)
 		return nil, errPod
 	}
 
@@ -117,17 +114,17 @@ func (k *kubeClient) getPodInfo() (*podInfo, error) {
 	// get label to match peer PODs
 
 	var labelKey string
-	if k.labelKey == "" {
+	if k.options.PodLabelKey == "" {
 		labelKey = "app" // default label key
 	} else {
-		labelKey = k.labelKey
+		labelKey = k.options.PodLabelKey
 	}
 
 	var labelValue string
-	if k.labelValue == "" {
+	if k.options.PodLabelValue == "" {
 		labelValue = pod.ObjectMeta.Labels[labelKey] // default label value
 	} else {
-		labelValue = k.labelValue
+		labelValue = k.options.PodLabelValue
 	}
 
 	// search other pods using label from my pod
@@ -146,7 +143,7 @@ func (k *kubeClient) listPodsAddresses() ([]string, error) {
 
 	table, errTable := k.getPodTable()
 	if errTable != nil {
-		log.Printf("listPodsAddresses: pod table: %v", errTable)
+		k.options.Errorf("listPodsAddresses: pod table: %v", errTable)
 		return nil, errTable
 	}
 
@@ -164,7 +161,7 @@ func (k *kubeClient) getPodTable() (map[string]string, error) {
 		}
 		addr, errAddr := findMyAddr()
 		if errAddr != nil {
-			log.Printf("getPodTable: %v", errAddr)
+			k.options.Errorf("getPodTable: %v", errAddr)
 		}
 		if addr == "" {
 			return nil, errors.New("getPodTable: out-of-cluster: missing pod address")
@@ -175,13 +172,13 @@ func (k *kubeClient) getPodTable() (map[string]string, error) {
 
 	podInfo, errInfo := k.getPodInfo()
 	if errInfo != nil {
-		log.Printf("getPodTable: pod info: %v", errInfo)
+		k.options.Errorf("getPodTable: pod info: %v", errInfo)
 		return nil, errInfo
 	}
 
 	pods, errList := k.clientset.CoreV1().Pods(podInfo.namespace).List(context.TODO(), podInfo.listOptions)
 	if errList != nil {
-		log.Printf("getPodTable: list pods: %v", errList)
+		k.options.Errorf("getPodTable: list pods: %v", errList)
 		return nil, errList
 	}
 
@@ -208,27 +205,26 @@ func (k *kubeClient) watchPodsAddresses(out chan<- podAddress) error {
 	// some going down events don't report pod address, so we retrieve addr from a local table
 	table, errTable := k.getPodTable()
 	if errTable != nil {
-		log.Printf("watchPodsAddresses: table: %v", errTable)
+		k.options.Errorf("watchPodsAddresses: table: %v", errTable)
 		return errTable
 	}
 
-	log.Printf("watchPodsAddresses: initial table: %v", table)
+	k.options.Debugf("watchPodsAddresses: initial table: %v", table)
 
 	podInfo, errInfo := k.getPodInfo()
 	if errInfo != nil {
-		log.Printf("watchPodsAddresses: pod info: %v", errInfo)
+		k.options.Errorf("watchPodsAddresses: pod info: %v", errInfo)
 		return errInfo
 	}
 
-	const cooldown = 5 * time.Second
 	for {
 		errWatch := k.watchOnce(out, podInfo, table)
-		log.Printf("watchPodsAddresses: %v", errWatch)
+		k.options.Errorf("watchPodsAddresses: %v", errWatch)
 		if errWatch != errWatchInputChannelClose {
 			return errWatch
 		}
-		log.Printf("watchPodsAddresses: retrying in %v", cooldown)
-		time.Sleep(cooldown)
+		k.options.Errorf("watchPodsAddresses: retrying in %v", k.options.Cooldown)
+		time.Sleep(k.options.Cooldown)
 	}
 }
 
@@ -239,13 +235,13 @@ func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[s
 
 	watcher, errWatch := k.clientset.CoreV1().Pods(info.namespace).Watch(context.TODO(), info.listOptions)
 	if errWatch != nil {
-		log.Printf("watchOnce: watch: %v", errWatch)
+		k.options.Errorf("watchOnce: watch: %v", errWatch)
 		return errWatch
 	}
 
 	in := watcher.ResultChan()
 	for event := range in {
-		if result, ok := action(table, event, myPodName); ok {
+		if result, ok := action(table, event, myPodName, k.options); ok {
 			out <- result
 		}
 	}
@@ -253,19 +249,19 @@ func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[s
 	return errWatchInputChannelClose
 }
 
-func action(table map[string]string, event watch.Event, myPodName string) (podAddress, bool) {
+func action(table map[string]string, event watch.Event, myPodName string, options Options) (podAddress, bool) {
 	const me = "action"
 
 	var result podAddress
 
 	pod, ok := event.Object.(*corev1.Pod)
 	if !ok {
-		log.Printf("%s: unexpected event object: %v", me, event.Object)
+		options.Errorf("%s: unexpected event object: %v", me, event.Object)
 		return result, false
 	}
 
 	if pod == nil {
-		log.Printf("%s: unexpected nil pod from event object: %v", me, event.Object)
+		options.Errorf("%s: unexpected nil pod from event object: %v", me, event.Object)
 		return result, false
 	}
 
@@ -280,7 +276,7 @@ func action(table map[string]string, event watch.Event, myPodName string) (podAd
 	ready := isPodReady(pod)
 
 	if name == myPodName {
-		log.Printf("%s: event=%s pod=%s addr=%s ready=%t: ignoring my own pod",
+		options.Debugf("%s: event=%s pod=%s addr=%s ready=%t: ignoring my own pod",
 			me, event.Type, name, addr, ready)
 		return result, false // ignore my own pod
 	}
@@ -291,12 +287,12 @@ func action(table map[string]string, event watch.Event, myPodName string) (podAd
 	}
 
 	if addr == "" {
-		log.Printf("%s: event=%s pod=%s addr=%s ready=%t: ignoring, cannot add/remove unknown address",
+		options.Debugf("%s: event=%s pod=%s addr=%s ready=%t: ignoring, cannot add/remove unknown address",
 			me, event.Type, name, addr, ready)
 		return result, false // ignore empty address
 	}
 
-	log.Printf("%s: event=%s pod=%s addr=%s ready=%t: success: sending update",
+	options.Debugf("%s: event=%s pod=%s addr=%s ready=%t: success: sending update",
 		me, event.Type, name, addr, ready)
 
 	if event.Type != watch.Deleted {

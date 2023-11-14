@@ -123,6 +123,10 @@ var testTableAction = []testCaseAction{
 	},
 }
 
+func testOptions() Options {
+	return defaultOptions(Options{Debug: true})
+}
+
 func TestAction(t *testing.T) {
 
 	for _, data := range testTableAction {
@@ -144,7 +148,7 @@ func TestAction(t *testing.T) {
 			Object: &pod,
 		}
 
-		result, ok := action(data.table, event, data.myPodName)
+		result, ok := action(data.table, event, data.myPodName, testOptions())
 		if ok != data.expectResult {
 			t.Errorf("%s: wrong result: expected=%t got=%t", data.name, data.expectResult, ok)
 		}
@@ -181,7 +185,7 @@ func TestActionNonDeleteWithReady(t *testing.T) {
 			Object: &pod,
 		}
 
-		result, ok := action(table, event, "this-pod")
+		result, ok := action(table, event, "this-pod", testOptions())
 		if !ok {
 			t.Errorf("unexpected not ok action")
 		}
@@ -219,7 +223,7 @@ func TestActionNonDeleteWithNotReady(t *testing.T) {
 			Object: &pod,
 		}
 
-		result, ok := action(table, event, "this-pod")
+		result, ok := action(table, event, "this-pod", testOptions())
 		if !ok {
 			t.Errorf("unexpected not ok action")
 		}
@@ -257,7 +261,7 @@ func TestActionDeleteWithReady(t *testing.T) {
 			Object: &pod,
 		}
 
-		result, ok := action(table, event, "this-pod")
+		result, ok := action(table, event, "this-pod", testOptions())
 		if !ok {
 			t.Errorf("unexpected not ok action")
 		}
@@ -296,7 +300,7 @@ func TestActionDeleteWithNotReady(t *testing.T) {
 			Object: &pod,
 		}
 
-		result, ok := action(table, event, "this-pod")
+		result, ok := action(table, event, "this-pod", testOptions())
 		if !ok {
 			t.Errorf("unexpected not ok action")
 		}
@@ -330,7 +334,7 @@ func TestActionMyPodName(t *testing.T) {
 		Object: &pod,
 	}
 
-	_, ok := action(table, event, "this-pod")
+	_, ok := action(table, event, "this-pod", testOptions())
 	if ok {
 		t.Errorf("unexpected ok action")
 	}
@@ -356,7 +360,7 @@ func TestActionMissingAddr(t *testing.T) {
 		Object: &pod,
 	}
 
-	_, ok := action(table, event, "this-pod")
+	_, ok := action(table, event, "this-pod", testOptions())
 	if ok {
 		t.Errorf("unexpected ok action")
 	}
@@ -384,7 +388,7 @@ func TestActionMissingAddrSolvedFromTable(t *testing.T) {
 		Object: &pod,
 	}
 
-	result, ok := action(table, event, "this-pod")
+	result, ok := action(table, event, "this-pod", testOptions())
 	if !ok {
 		t.Errorf("unexpected not ok action")
 	}

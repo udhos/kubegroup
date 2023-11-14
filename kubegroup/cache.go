@@ -63,20 +63,71 @@ type Options struct {
 	// to "my-app-name" or leave it empty (since by default PodLabelValue takes its value
 	// from the PodLabelKey key).
 	PodLabelValue string
+
+	// Cooldown sets interval between retries. If unspecified defaults to 5 seconds.
+	Cooldown time.Duration
+
+	// Debug enables non-error logging. Errors are always logged.
+	Debug bool
+
+	// Debugf optionally sets custom logging stream for debug messages.
+	Debugf func(format string, v ...any)
+
+	// Errorf optionally sets custom logging stream for error messages.
+	Errorf func(format string, v ...any)
+
+	// Fatalf optionally sets custom logging stream for fatal messages. It must terminate/abort the program.
+	Fatalf func(format string, v ...any)
+}
+
+func debugf(format string, v ...any) {
+	log.Printf("DEBUG: "+format, v...)
+}
+
+func errorf(format string, v ...any) {
+	log.Printf("ERROR: "+format, v...)
+}
+
+func fatalf(format string, v ...any) {
+	log.Fatalf("FATAL: "+format, v...)
+}
+
+func defaultOptions(options Options) Options {
+	if options.Cooldown == 0 {
+		options.Cooldown = 5 * time.Second
+	}
+	if options.Debugf == nil {
+		options.Debugf = func(format string, v ...any) {
+			if options.Debug {
+				debugf(format, v...)
+			}
+		}
+	}
+	if options.Errorf == nil {
+		options.Errorf = errorf
+	}
+	if options.Fatalf == nil {
+		options.Fatalf = fatalf
+	}
+	return options
 }
 
 // UpdatePeers continuously updates groupcache peers.
 // groupcachePort example: ":5000".
 func UpdatePeers(options Options) {
 
-	kc, errClient := newKubeClient(options.PodLabelKey, options.PodLabelValue)
+	const me = "UpdatePeers"
+
+	options = defaultOptions(options)
+
+	kc, errClient := newKubeClient(options)
 	if errClient != nil {
-		log.Fatalf("updatePeers: kube client: %v", errClient)
+		options.Fatalf("%s: kube client: %v", me, errClient)
 	}
 
 	addresses, errList := kc.listPodsAddresses()
 	if errList != nil {
-		log.Fatalf("updatePeers: list addresses: %v", errList)
+		options.Fatalf("%s: list addresses: %v", me, errList)
 	}
 
 	var myAddr string
@@ -85,12 +136,11 @@ func UpdatePeers(options Options) {
 		var errAddr error
 		myAddr, errAddr = findMyAddr()
 		if errAddr != nil {
-			log.Printf("updatePeers: %v", errAddr)
+			options.Errorf("%s: %v", me, errAddr)
 		}
 		if myAddr == "" {
-			const cooldown = 5 * time.Second
-			log.Printf("updatePeers: could not find my address, sleeping %v", cooldown)
-			time.Sleep(cooldown)
+			options.Errorf("%s: could not find my address, sleeping %v", me, options.Cooldown)
+			time.Sleep(options.Cooldown)
 		}
 	}
 
@@ -104,7 +154,7 @@ func UpdatePeers(options Options) {
 	}
 
 	keys := maps.Keys(peers)
-	log.Printf("updatePeers: initial peers: %v", keys)
+	options.Debugf("%s: initial peers: %v", me, keys)
 	options.Pool.Set(keys...)
 
 	ch := make(chan podAddress)
@@ -113,8 +163,8 @@ func UpdatePeers(options Options) {
 
 	for n := range ch {
 		url := buildURL(n.address, options.GroupCachePort)
-		log.Printf("updatePeers: peer=%s added=%t current peers: %v",
-			url, n.added, maps.Keys(peers))
+		options.Debugf("%s: peer=%s added=%t current peers: %v",
+			me, url, n.added, maps.Keys(peers))
 		count := len(peers)
 		if n.added {
 			peers[url] = true
@@ -125,17 +175,17 @@ func UpdatePeers(options Options) {
 			continue
 		}
 		keys := maps.Keys(peers)
-		log.Printf("updatePeers: updating peers: %v", keys)
+		options.Debugf("%s: updating peers: %v", me, keys)
 		options.Pool.Set(keys...)
 	}
 
-	log.Printf("updatePeers: channel has been closed, nothing to do, exiting")
+	options.Errorf("%s: channel has been closed, nothing to do, exiting goroutine", me)
 }
 
 func watchPeers(kc kubeClient, ch chan<- podAddress) {
 	errWatch := kc.watchPodsAddresses(ch)
 	if errWatch != nil {
-		log.Fatalf("watchPeers: %v", errWatch)
+		kc.options.Fatalf("watchPeers: %v", errWatch)
 	}
-	log.Printf("watchPeers: nothing to do, exiting")
+	kc.options.Errorf("watchPeers: nothing to do, exiting goroutine")
 }

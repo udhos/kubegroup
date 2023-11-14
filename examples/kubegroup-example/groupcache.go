@@ -55,6 +55,7 @@ func startGroupcache(app *application) {
 		GroupCachePort: app.groupCachePort,
 		//PodLabelKey:    "app",         // default is "app"
 		//PodLabelValue:  "my-app-name", // default is current PODs label value for label key
+		Debug: true,
 	}
 
 	go kubegroup.UpdatePeers(options)
