@@ -2,10 +2,12 @@
 package kubegroup
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/mailgun/groupcache" // "github.com/golang/groupcache"
@@ -112,80 +114,126 @@ func defaultOptions(options Options) Options {
 	return options
 }
 
+// Group holds context for kubegroup.
+type Group struct {
+	options Options
+	client  kubeClient
+	peers   map[string]bool
+	done    chan struct{}
+	closed  bool
+	mutex   sync.Mutex
+}
+
+// Close terminates kubegroup goroutines to release resources.
+func (g *Group) Close() {
+	g.mutex.Lock()
+	if !g.closed {
+		close(g.done)
+		g.closed = true
+	}
+	g.mutex.Unlock()
+}
+
 // UpdatePeers continuously updates groupcache peers.
 // groupcachePort example: ":5000".
-func UpdatePeers(options Options) {
+func UpdatePeers(options Options) (*Group, error) {
 
 	const me = "UpdatePeers"
 
 	options = defaultOptions(options)
 
+	group := &Group{
+		options: options,
+		done:    make(chan struct{}),
+	}
+
 	kc, errClient := newKubeClient(options)
 	if errClient != nil {
-		options.Fatalf("%s: kube client: %v", me, errClient)
+		return nil, errClient
 	}
+
+	group.client = kc
 
 	addresses, errList := kc.listPodsAddresses()
 	if errList != nil {
 		options.Fatalf("%s: list addresses: %v", me, errList)
+		return nil, errList
 	}
 
 	var myAddr string
 
-	for myAddr == "" {
+	{
 		var errAddr error
 		myAddr, errAddr = findMyAddr()
 		if errAddr != nil {
 			options.Errorf("%s: %v", me, errAddr)
+			return nil, errAddr
 		}
-		if myAddr == "" {
-			options.Errorf("%s: could not find my address, sleeping %v", me, options.Cooldown)
-			time.Sleep(options.Cooldown)
-		}
+	}
+
+	if myAddr == "" {
+		return nil, errors.New("could not find my address")
 	}
 
 	addresses = append(addresses, myAddr) // force my own addr
 
-	peers := map[string]bool{}
+	group.peers = map[string]bool{}
 
 	for _, addr := range addresses {
 		url := buildURL(addr, options.GroupCachePort)
-		peers[url] = true
+		group.peers[url] = true
 	}
 
-	keys := maps.Keys(peers)
+	keys := maps.Keys(group.peers)
 	options.Debugf("%s: initial peers: %v", me, keys)
 	options.Pool.Set(keys...)
 
-	ch := make(chan podAddress)
+	go updateLoop(group)
 
-	go watchPeers(kc, ch)
-
-	for n := range ch {
-		url := buildURL(n.address, options.GroupCachePort)
-		options.Debugf("%s: peer=%s added=%t current peers: %v",
-			me, url, n.added, maps.Keys(peers))
-		count := len(peers)
-		if n.added {
-			peers[url] = true
-		} else {
-			delete(peers, url)
-		}
-		if len(peers) == count {
-			continue
-		}
-		keys := maps.Keys(peers)
-		options.Debugf("%s: updating peers: %v", me, keys)
-		options.Pool.Set(keys...)
-	}
-
-	options.Errorf("%s: channel has been closed, nothing to do, exiting goroutine", me)
+	return group, nil
 }
 
-func watchPeers(kc kubeClient, ch chan<- podAddress) {
-	errWatch := kc.watchPodsAddresses(ch)
-	if errWatch != nil {
-		kc.options.Fatalf("watchPeers: %v", errWatch)
+func updateLoop(group *Group) {
+	ch := make(chan podAddress)
+
+	const me = "updateLoop"
+
+	go watchPeers(group, ch)
+
+	for {
+		select {
+		case <-group.done:
+			group.options.Debugf("%s: done channel closed, goroutine exiting", me)
+			return
+		case n, ok := <-ch:
+			if !ok {
+				group.options.Errorf("%s: channel has been closed, nothing to do, exiting goroutine", me)
+				return
+			}
+			url := buildURL(n.address, group.options.GroupCachePort)
+			group.options.Debugf("%s: peer=%s added=%t current peers: %v",
+				me, url, n.added, maps.Keys(group.peers))
+			count := len(group.peers)
+			if n.added {
+				group.peers[url] = true
+			} else {
+				delete(group.peers, url)
+			}
+			if len(group.peers) == count {
+				continue
+			}
+			keys := maps.Keys(group.peers)
+			group.options.Debugf("%s: updating peers: %v", me, keys)
+			group.options.Pool.Set(keys...)
+		}
 	}
-	kc.options.Errorf("watchPeers: nothing to do, exiting goroutine")
+}
+
+func watchPeers(group *Group, ch chan<- podAddress) {
+	const me = "watchPeers"
+	errWatch := group.client.watchPodsAddresses(ch, group.done)
+	if errWatch != nil {
+		group.client.options.Fatalf("%s: %v", me, errWatch)
+	}
+	group.client.options.Errorf("%s: nothing to do, exiting goroutine", me)
 }

@@ -9,8 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-type resultExpect int
-
 const (
 	podReady    = true
 	podNotReady = false

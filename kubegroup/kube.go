@@ -194,7 +194,9 @@ func (k *kubeClient) getPodTable() (map[string]string, error) {
 	return table, nil
 }
 
-func (k *kubeClient) watchPodsAddresses(out chan<- podAddress) error {
+func (k *kubeClient) watchPodsAddresses(out chan<- podAddress, done chan struct{}) error {
+
+	const me = "watchPodsAddresses"
 
 	defer close(out) // notify readers
 
@@ -205,48 +207,65 @@ func (k *kubeClient) watchPodsAddresses(out chan<- podAddress) error {
 	// some going down events don't report pod address, so we retrieve addr from a local table
 	table, errTable := k.getPodTable()
 	if errTable != nil {
-		k.options.Errorf("watchPodsAddresses: table: %v", errTable)
+		k.options.Errorf("%s: table: %v", me, errTable)
 		return errTable
 	}
 
-	k.options.Debugf("watchPodsAddresses: initial table: %v", table)
+	k.options.Debugf("%s: initial table: %v", me, table)
 
 	podInfo, errInfo := k.getPodInfo()
 	if errInfo != nil {
-		k.options.Errorf("watchPodsAddresses: pod info: %v", errInfo)
+		k.options.Errorf("%s: pod info: %v", me, errInfo)
 		return errInfo
 	}
 
 	for {
-		errWatch := k.watchOnce(out, podInfo, table)
-		k.options.Errorf("watchPodsAddresses: %v", errWatch)
-		if errWatch != errWatchInputChannelClose {
-			return errWatch
+		select {
+		case <-done:
+			k.options.Debugf("%s: done channel closed, exiting", me)
+			return nil
+		default:
+			errWatch := k.watchOnce(out, podInfo, table, done)
+			k.options.Errorf("%s: %v", me, errWatch)
+			if errWatch != errWatchInputChannelClose {
+				return errWatch
+			}
+			k.options.Errorf("%s: retrying in %v", me, k.options.Cooldown)
+			time.Sleep(k.options.Cooldown)
 		}
-		k.options.Errorf("watchPodsAddresses: retrying in %v", k.options.Cooldown)
-		time.Sleep(k.options.Cooldown)
 	}
 }
 
 var errWatchInputChannelClose = errors.New("watchOnce: input channel has been closed")
 
-func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[string]string) error {
+func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[string]string, done chan struct{}) error {
+	const me = "watchOnce"
+
 	myPodName := info.name
 
 	watcher, errWatch := k.clientset.CoreV1().Pods(info.namespace).Watch(context.TODO(), info.listOptions)
 	if errWatch != nil {
-		k.options.Errorf("watchOnce: watch: %v", errWatch)
+		k.options.Errorf("%s: watch: %v", me, errWatch)
 		return errWatch
 	}
 
 	in := watcher.ResultChan()
-	for event := range in {
-		if result, ok := action(table, event, myPodName, k.options); ok {
-			out <- result
+	for {
+		select {
+		case <-done:
+			k.options.Debugf("%s: done channel closed, exiting", me)
+			return nil
+		case event, ok := <-in:
+			if !ok {
+				return errWatchInputChannelClose
+			}
+			if result, ok := action(table, event, myPodName, k.options); ok {
+				out <- result
+			}
 		}
 	}
 
-	return errWatchInputChannelClose
+	// not reached
 }
 
 func action(table map[string]string, event watch.Event, myPodName string, options Options) (podAddress, bool) {

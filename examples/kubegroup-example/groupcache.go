@@ -58,7 +58,12 @@ func startGroupcache(app *application) {
 		Debug: true,
 	}
 
-	go kubegroup.UpdatePeers(options)
+	group, errGroup := kubegroup.UpdatePeers(options)
+	if errGroup != nil {
+		log.Fatalf("kubegroup: %v", errGroup)
+	}
+
+	app.group = group
 
 	//
 	// create cache

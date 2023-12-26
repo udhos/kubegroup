@@ -2,12 +2,17 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/mailgun/groupcache"
+	"github.com/udhos/kubegroup/kubegroup"
 )
 
 type application struct {
@@ -19,6 +24,7 @@ type application struct {
 	serverMain       *http.Server
 	serverGroupCache *http.Server
 	cache            *groupcache.Group
+	group            *kubegroup.Group
 }
 
 func main() {
@@ -38,9 +44,16 @@ func main() {
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { routeHandler(w, r, app) })
 
-	log.Printf("main server: listening on %s", app.listenAddr)
-	err := app.serverMain.ListenAndServe()
-	log.Printf("main server: exited: %v", err)
+	go func() {
+		//
+		// start main http server
+		//
+		log.Printf("main server: listening on %s", app.listenAddr)
+		err := app.serverMain.ListenAndServe()
+		log.Printf("main server: exited: %v", err)
+	}()
+
+	shutdown(app)
 }
 
 func routeHandler(w http.ResponseWriter, r *http.Request, app *application) {
@@ -59,5 +72,34 @@ func routeHandler(w http.ResponseWriter, r *http.Request, app *application) {
 
 	if _, errWrite := w.Write(data); errWrite != nil {
 		log.Printf("routeHandler: %s %s: write error: %v", r.Method, r.URL.Path, errWrite)
+	}
+}
+
+func shutdown(app *application) {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+
+	log.Printf("received signal '%v', initiating shutdown", sig)
+
+	log.Printf("stopping kubegroup")
+
+	app.group.Close()
+
+	time.Sleep(time.Second) // give kubegroup time to log debug messages about exiting
+
+	log.Printf("stopping http servers")
+
+	httpShutdown(app.serverMain)
+	httpShutdown(app.serverGroupCache)
+
+	log.Printf("exiting")
+}
+
+func httpShutdown(server *http.Server) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("http server shutdown error: %v", err)
 	}
 }

@@ -41,9 +41,17 @@ options := kubegroup.Options{
     //PodLabelValue:  "my-app-name", // default is current PODs label value for label key
 }
 
-go kubegroup.UpdatePeers(options)
+group, errGroup := kubegroup.UpdatePeers(options)
+if errGroup != nil {
+    log.Fatalf("kubegroup: %v", errGroup)
+}
 
 // 4. create groupcache groups, etc: groupOne := groupcache.NewGroup()
+
+// 5. later you might stop kubegroup to release resources
+
+group.Close()
+server.Shutdown(...) // do not forget to shutdown the peering server
 ```
 
 # Example
