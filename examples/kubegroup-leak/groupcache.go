@@ -59,37 +59,5 @@ func startPeerWatcher(app *application, pool *groupcache.HTTPPool) {
 		log.Fatalf("kubegroup: %v", errGroup)
 	}
 
-	app.group = group
-
-	/*
-		//
-		// create cache
-		//
-
-		// https://talks.golang.org/2013/oscon-dl.slide#46
-		//
-		// 64 MB max per-node memory usage
-		app.cache = groupcache.NewGroup("files", app.groupCacheSizeBytes, groupcache.GetterFunc(
-			func(ctx groupcache.Context, filePath string, dest groupcache.Sink) error {
-
-				log.Printf("cache miss, loading file: %s (ttl:%v)", filePath, app.groupCacheExpire)
-
-				data, errRead := os.ReadFile(filePath)
-				if errRead != nil {
-					return errRead
-				}
-
-				var expire time.Time // zero value for expire means no expiration
-				if app.groupCacheExpire != 0 {
-					expire = time.Now().Add(app.groupCacheExpire)
-				}
-
-				dest.SetBytes(data, expire)
-
-				return nil
-			},
-		))
-	*/
-
-	group.Close()
+	group.Close() // release watcher resources
 }
