@@ -91,7 +91,7 @@ func shutdown(app *application) {
 
 	log.Printf("stopping kubegroup")
 
-	app.group.Close()
+	app.group.Close() // release kubegroup resources
 
 	time.Sleep(time.Second) // give kubegroup time to log debug messages about exiting
 

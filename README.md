@@ -48,9 +48,9 @@ if errGroup != nil {
 
 // 4. create groupcache groups, etc: groupOne := groupcache.NewGroup()
 
-// 5. later you might stop kubegroup to release resources
+// 5. before shutdown you might stop kubegroup to release resources
 
-group.Close()
+group.Close() // release kubegroup resources
 server.Shutdown(...) // do not forget to shutdown the peering server
 ```
 
