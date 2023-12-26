@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -25,6 +26,8 @@ type application struct {
 	serverGroupCache *http.Server
 	cache            *groupcache.Group
 	group            *kubegroup.Group
+
+	engineBogus bool
 }
 
 func main() {
@@ -37,6 +40,10 @@ func main() {
 		groupCacheSizeBytes: 1_000_000,        // limit cache at 1 MB
 		groupCacheExpire:    60 * time.Second, // cache TTL at 60s
 	}
+
+	flag.BoolVar(&app.engineBogus, "engineBogus", false, "enable bogus kube engine (for testing)")
+
+	flag.Parse()
 
 	app.serverMain = &http.Server{Addr: app.listenAddr, Handler: mux}
 

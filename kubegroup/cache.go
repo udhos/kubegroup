@@ -66,6 +66,8 @@ type Options struct {
 	// from the PodLabelKey key).
 	PodLabelValue string
 
+	Engine KubeEngine
+
 	// Cooldown sets interval between retries. If unspecified defaults to 5 seconds.
 	Cooldown time.Duration
 
@@ -94,9 +96,15 @@ func fatalf(format string, v ...any) {
 	log.Fatalf("FATAL: "+format, v...)
 }
 
+// DefaultEngine defines default kube engine.
+var DefaultEngine = NewKubeReal()
+
 func defaultOptions(options Options) Options {
 	if options.Cooldown == 0 {
 		options.Cooldown = 5 * time.Second
+	}
+	if options.Engine == nil {
+		options.Engine = DefaultEngine
 	}
 	if options.Debugf == nil {
 		options.Debugf = func(format string, v ...any) {

@@ -1,8 +1,8 @@
 package kubegroup
 
 import (
-	"context"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -11,12 +11,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type kubeClient struct {
-	clientset *kubernetes.Clientset
+	//clientset *kubernetes.Clientset
 	inCluster bool
 	podCache  *podInfo
 	options   Options
@@ -34,47 +32,56 @@ func newKubeClient(options Options) (kubeClient, error) {
 		options: options,
 	}
 
-	config, errConfig := rest.InClusterConfig()
-	if errConfig != nil {
-		options.Errorf("running OUT-OF-CLUSTER: %v", errConfig)
-		return kc, nil
-	}
+	/*
+		config, errConfig := rest.InClusterConfig()
+		if errConfig != nil {
+			options.Errorf("running OUT-OF-CLUSTER: %v", errConfig)
+			return kc, nil
+		}
 
-	options.Debugf("running IN-CLUSTER")
-	kc.inCluster = true
+		options.Debugf("running IN-CLUSTER")
+		kc.inCluster = true
 
-	clientset, errClientset := kubernetes.NewForConfig(config)
-	if errClientset != nil {
-		options.Errorf("kube clientset error: %v", errClientset)
-		return kc, errClientset
-	}
+		clientset, errClientset := kubernetes.NewForConfig(config)
+		if errClientset != nil {
+			options.Errorf("kube clientset error: %v", errClientset)
+			return kc, errClientset
+		}
 
-	kc.clientset = clientset
+		kc.clientset = clientset
+	*/
 
-	return kc, nil
+	inCluster, errInit := options.Engine.initClient(options)
+
+	kc.inCluster = inCluster
+
+	return kc, errInit
 }
 
-func (k *kubeClient) getPodName() string {
+func getPodName(errorf func(format string, v ...any)) string {
+	const me = "getPodName"
 	host, errHost := os.Hostname()
 	if errHost != nil {
-		k.options.Errorf("getPodName: hostname: %v", errHost)
+		errorf("%s: hostname: %v", me, errHost)
 	}
 	return host
 }
 
 func (k *kubeClient) getPod() (*corev1.Pod, error) {
-	podName := k.getPodName()
+	podName := getPodName(k.options.Errorf)
 	if podName == "" {
 		return nil, errors.New("missing pod name")
 	}
 
-	namespace, errNs := findMyNamespace()
+	//namespace, errNs := findMyNamespace()
+	namespace, errNs := k.options.Engine.findMyNamespace()
 	if errNs != nil {
 		k.options.Errorf("getPod: could not find pod='%s' namespace: %v", podName, errNs)
 		return nil, errNs
 	}
 
-	pod, errPod := k.clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	//pod, errPod := k.clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	pod, errPod := k.options.Engine.getPod(namespace, podName)
 	if errPod != nil {
 		k.options.Errorf("getPod: could not find pod name='%s': %v", podName, errPod)
 	}
@@ -82,10 +89,12 @@ func (k *kubeClient) getPod() (*corev1.Pod, error) {
 	return pod, errPod
 }
 
+/*
 func findMyNamespace() (string, error) {
 	buf, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	return string(buf), err
 }
+*/
 
 func isPodReady(pod *corev1.Pod) bool {
 	for _, condition := range pod.Status.Conditions {
@@ -152,19 +161,21 @@ func (k *kubeClient) listPodsAddresses() ([]string, error) {
 
 func (k *kubeClient) getPodTable() (map[string]string, error) {
 
+	const me = "getPodTable"
+
 	table := map[string]string{}
 
 	if !k.inCluster {
-		name := k.getPodName()
+		name := getPodName(k.options.Errorf)
 		if name == "" {
-			return nil, errors.New("getPodTable: out-of-cluster: missing pod name")
+			return nil, fmt.Errorf("%s: out-of-cluster: missing pod name", me)
 		}
 		addr, errAddr := findMyAddr()
 		if errAddr != nil {
-			k.options.Errorf("getPodTable: %v", errAddr)
+			k.options.Errorf("%s: %v", me, errAddr)
 		}
 		if addr == "" {
-			return nil, errors.New("getPodTable: out-of-cluster: missing pod address")
+			return nil, fmt.Errorf("%s: out-of-cluster: missing pod address", me)
 		}
 		table[name] = addr
 		return table, nil
@@ -172,13 +183,14 @@ func (k *kubeClient) getPodTable() (map[string]string, error) {
 
 	podInfo, errInfo := k.getPodInfo()
 	if errInfo != nil {
-		k.options.Errorf("getPodTable: pod info: %v", errInfo)
+		k.options.Errorf("%s: pod info: %v", me, errInfo)
 		return nil, errInfo
 	}
 
-	pods, errList := k.clientset.CoreV1().Pods(podInfo.namespace).List(context.TODO(), podInfo.listOptions)
+	//pods, errList := k.clientset.CoreV1().Pods(podInfo.namespace).List(context.TODO(), podInfo.listOptions)
+	pods, errList := k.options.Engine.listPods(podInfo.namespace, podInfo.listOptions)
 	if errList != nil {
-		k.options.Errorf("getPodTable: list pods: %v", errList)
+		k.options.Errorf("%s: list pods: %v", me, errList)
 		return nil, errList
 	}
 
@@ -190,6 +202,8 @@ func (k *kubeClient) getPodTable() (map[string]string, error) {
 		addr := p.Status.PodIP
 		table[name] = addr
 	}
+
+	k.options.Debugf("%s: found=%d ready=%d", me, len(pods.Items), len(table))
 
 	return table, nil
 }
@@ -243,7 +257,8 @@ func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[s
 
 	myPodName := info.name
 
-	watcher, errWatch := k.clientset.CoreV1().Pods(info.namespace).Watch(context.TODO(), info.listOptions)
+	//watcher, errWatch := k.clientset.CoreV1().Pods(info.namespace).Watch(context.TODO(), info.listOptions)
+	watcher, errWatch := k.options.Engine.watchPods(info.namespace, info.listOptions)
 	if errWatch != nil {
 		k.options.Errorf("%s: watch: %v", me, errWatch)
 		return errWatch
