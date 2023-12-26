@@ -66,6 +66,8 @@ type Options struct {
 	// from the PodLabelKey key).
 	PodLabelValue string
 
+	// KubeEngine sets a plugable kube client. If unspecified, defaults to DefaultEngine.
+	// You can plug in a mocked client like KubeBogus for testing.
 	Engine KubeEngine
 
 	// Cooldown sets interval between retries. If unspecified defaults to 5 seconds.
@@ -96,7 +98,7 @@ func fatalf(format string, v ...any) {
 	log.Fatalf("FATAL: "+format, v...)
 }
 
-// DefaultEngine defines default kube engine.
+// DefaultEngine defines default kube client engine.
 var DefaultEngine = NewKubeReal()
 
 func defaultOptions(options Options) Options {
