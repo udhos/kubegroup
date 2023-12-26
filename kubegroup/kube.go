@@ -233,11 +233,12 @@ func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[s
 		return errWatch
 	}
 
+	defer watcher.Stop()
+
 	in := watcher.ResultChan()
 	for {
 		select {
 		case <-done:
-			watcher.Stop()
 			k.options.Debugf("%s: done channel closed, exiting", me)
 			return nil
 		case event, ok := <-in:
