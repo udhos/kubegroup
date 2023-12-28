@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mailgun/groupcache" // "github.com/golang/groupcache"
+	// "github.com/golang/groupcache"
 	"golang.org/x/exp/maps"
 )
 
@@ -49,9 +49,19 @@ func buildURL(addr, groupcachePort string) string {
 	return "http://" + addr + groupcachePort
 }
 
+// PeerGroup is an interface to plug in groupcache peering updates.
+// *groupcache.HTTPPool, created with groupcache.NewHTTPPoolOpts(), implements this interface.
+type PeerGroup interface {
+	Set(peers ...string)
+}
+
 // Options specifies options for UpdatePeers.
 type Options struct {
-	Pool           *groupcache.HTTPPool
+	// PeerGroup is an interface to plug in groupcache peering updates.
+	// *groupcache.HTTPPool, created with groupcache.NewHTTPPoolOpts(), implements this interface.
+	Pool PeerGroup
+
+	// GroupCachePort is the listening port used by groupcache peering http server. For instance, ":5000".
 	GroupCachePort string
 
 	// PodLabelKey is label key to match peer PODs, if unspecified defaults to "app".
