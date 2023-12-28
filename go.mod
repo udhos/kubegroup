@@ -1,6 +1,6 @@
 module github.com/udhos/kubegroup
 
-go 1.21.4
+go 1.21.5
 
 require (
 	github.com/mailgun/groupcache v1.3.0
