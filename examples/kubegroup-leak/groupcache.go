@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/mailgun/groupcache"
+	"github.com/modernprogram/groupcache/v2"
 	"github.com/udhos/kubegroup/kubegroup"
 )
 
