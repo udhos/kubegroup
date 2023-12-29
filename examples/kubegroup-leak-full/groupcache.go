@@ -64,6 +64,10 @@ func startGroupcache(app *application) {
 		Errorf: func(format string, v ...any) {},
 	}
 
+	if app.once {
+		options.Errorf = nil
+	}
+
 	/*
 		if app.engineBogus {
 			options.Engine = kubegroup.NewKubeBogus()
@@ -87,7 +91,9 @@ func startGroupcache(app *application) {
 	app.cache = groupcache.NewGroupWithWorkspace(ws, "files", app.groupCacheSizeBytes, groupcache.GetterFunc(
 		func(ctx context.Context, filePath string, dest groupcache.Sink) error {
 
-			log.Printf("cache miss, loading file: %s (ttl:%v)", filePath, app.groupCacheExpire)
+			if app.once {
+				log.Printf("cache miss, loading file: %s (ttl:%v)", filePath, app.groupCacheExpire)
+			}
 
 			data, errRead := os.ReadFile(filePath)
 			if errRead != nil {
@@ -104,4 +110,16 @@ func startGroupcache(app *application) {
 			return nil
 		},
 	))
+
+	for i := 0; i < 3; i++ {
+		var dst []byte
+		errGet := app.cache.Get(context.TODO(), "build.sh", groupcache.AllocatingByteSliceSink(&dst))
+		if errGet != nil {
+			log.Printf("cache get error: %v", errGet)
+			continue
+		}
+		if app.once {
+			log.Printf("cache get ok: %d bytes", len(dst))
+		}
+	}
 }

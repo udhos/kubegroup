@@ -3,9 +3,12 @@ package main
 
 import (
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/modernprogram/groupcache/v2"
+	"github.com/udhos/boilerplate/envconfig"
 	"github.com/udhos/kubegroup/kubegroup"
 )
 
@@ -21,17 +24,24 @@ type application struct {
 	group *kubegroup.Group
 
 	//engineBogus bool
+
+	once bool
 }
 
 func main() {
 
 	//mux := http.NewServeMux()
 
+	me := filepath.Base(os.Args[0])
+
+	env := envconfig.NewSimple(me)
+
 	app := &application{
 		//listenAddr:          ":8080",
 		groupCachePort:      ":5000",
 		groupCacheSizeBytes: 1_000_000,        // limit cache at 1 MB
 		groupCacheExpire:    60 * time.Second, // cache TTL at 60s
+		once:                env.Bool("ONCE", false),
 	}
 
 	/*
@@ -42,6 +52,11 @@ func main() {
 		//app.serverMain = &http.Server{Addr: app.listenAddr, Handler: mux}
 
 	*/
+
+	if app.once {
+		startGroupcache(app)
+		return
+	}
 
 	const max = 50000
 
