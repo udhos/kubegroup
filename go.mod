@@ -3,7 +3,7 @@ module github.com/udhos/kubegroup
 go 1.21.5
 
 require (
-	github.com/modernprogram/groupcache/v2 v2.5.3
+	github.com/modernprogram/groupcache/v2 v2.5.4
 	github.com/udhos/boilerplate v1.2.1
 	golang.org/x/exp v0.0.0-20231108232855-2478ac86f678
 	k8s.io/api v0.28.3
