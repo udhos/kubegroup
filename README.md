@@ -36,7 +36,7 @@ go func() {
 // 3. spawn peering autodiscovery
 options := kubegroup.Options{
     Pool:           pool,
-    GroupCachePort: app.groupCachePort,
+    GroupCachePort: groupCachePort,
     //PodLabelKey:    "app",         // default is "app"
     //PodLabelValue:  "my-app-name", // default is current PODs label value for label key
 }
