@@ -141,7 +141,7 @@ func (k *kubeClient) getPodTable() (map[string]string, error) {
 		if name == "" {
 			return nil, fmt.Errorf("%s: out-of-cluster: missing pod name", me)
 		}
-		addr, errAddr := findMyAddr()
+		addr, errAddr := k.options.Engine.findMyAddress()
 		if errAddr != nil {
 			k.options.Errorf("%s: %v", me, errAddr)
 		}

@@ -18,6 +18,7 @@ type KubeEngine interface {
 	listPods(namespace string, opts metav1.ListOptions) (*corev1.PodList, error)
 	watchPods(namespace string, opts metav1.ListOptions) (watch.Interface, error)
 	findMyNamespace() (string, error)
+	findMyAddress() (string, error)
 }
 
 // KubeReal defines real engine implementing KubeEngine interface.
@@ -73,6 +74,10 @@ func (e *KubeReal) findMyNamespace() (string, error) {
 	return string(buf), err
 }
 
+func (e *KubeReal) findMyAddress() (string, error) {
+	return findMyAddr()
+}
+
 // KubeBogus implements a bogus kube engine for testing.
 type KubeBogus struct {
 	options Options
@@ -90,7 +95,7 @@ func (e *KubeBogus) initClient(options Options) (bool, error) {
 
 func (e *KubeBogus) getPod(namespace, podName string) (*corev1.Pod, error) {
 
-	addr, _ := findMyAddr()
+	addr, _ := e.findMyAddress()
 
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -110,7 +115,7 @@ func (e *KubeBogus) getPod(namespace, podName string) (*corev1.Pod, error) {
 	return &pod, nil
 }
 
-func (e *KubeBogus) listPods(namespace string, opts metav1.ListOptions) (*corev1.PodList, error) {
+func (e *KubeBogus) listPods(namespace string, _ /*opts*/ metav1.ListOptions) (*corev1.PodList, error) {
 	podName := getPodName(e.options.Errorf)
 	pod, _ := e.getPod(namespace, podName)
 	list := corev1.PodList{
@@ -119,7 +124,7 @@ func (e *KubeBogus) listPods(namespace string, opts metav1.ListOptions) (*corev1
 	return &list, nil
 }
 
-func (e *KubeBogus) watchPods(namespace string, opts metav1.ListOptions) (watch.Interface, error) {
+func (e *KubeBogus) watchPods(_ /*namespace*/ string, _ /*opts*/ metav1.ListOptions) (watch.Interface, error) {
 	w := bogusWatch{
 		ch: make(chan watch.Event),
 	}
@@ -140,4 +145,8 @@ func (w *bogusWatch) ResultChan() <-chan watch.Event {
 
 func (e *KubeBogus) findMyNamespace() (string, error) {
 	return "default", nil
+}
+
+func (e *KubeBogus) findMyAddress() (string, error) {
+	return "127.0.0.1", nil
 }

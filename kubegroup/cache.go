@@ -184,7 +184,7 @@ func UpdatePeers(options Options) (*Group, error) {
 
 	{
 		var errAddr error
-		myAddr, errAddr = findMyAddr()
+		myAddr, errAddr = options.Engine.findMyAddress()
 		if errAddr != nil {
 			options.Errorf("%s: %v", me, errAddr)
 			return nil, errAddr
