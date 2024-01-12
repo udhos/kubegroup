@@ -57,3 +57,46 @@ server.Shutdown(...) // do not forget to shutdown the peering server
 # Example
 
 See [./examples/kubegroup-example](./examples/kubegroup-example)
+
+# POD Permissions
+
+The application PODs will need permissions to get/list/watch PODs against kubernetes API, as illustrated by the role below.
+
+## Role
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: role-name
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - 'pods'
+  verbs:
+  - 'get'
+  - 'list'
+  - 'watch'
+```
+
+Example chart template: https://github.com/udhos/gateboard/blob/main/charts/gateboard/templates/role.yaml
+
+## Role Binding
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rolebinding-name
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: role-name
+subjects:
+- kind: ServiceAccount
+  name: put-pod-service-account-here
+  namespace: put-pod-namespace-here
+```
+
+Example chart template: https://github.com/udhos/gateboard/blob/main/charts/gateboard/templates/rolebinding.yaml
