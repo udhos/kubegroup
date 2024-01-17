@@ -97,15 +97,15 @@ type Options struct {
 }
 
 func debugf(format string, v ...any) {
-	log.Printf("DEBUG: "+format, v...)
+	log.Printf("DEBUG kubegroup: "+format, v...)
 }
 
 func errorf(format string, v ...any) {
-	log.Printf("ERROR: "+format, v...)
+	log.Printf("ERROR kubegroup: "+format, v...)
 }
 
 func fatalf(format string, v ...any) {
-	log.Fatalf("FATAL: "+format, v...)
+	log.Fatalf("FATAL kubegroup: "+format, v...)
 }
 
 // DefaultEngine defines default kube client engine.
@@ -146,6 +146,7 @@ type Group struct {
 
 // Close terminates kubegroup goroutines to release resources.
 func (g *Group) Close() {
+	g.options.Debugf("Close called to release resources")
 	g.mutex.Lock()
 	if !g.closed {
 		close(g.done)

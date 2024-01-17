@@ -185,6 +185,7 @@ func (k *kubeClient) watchPodsAddresses(out chan<- podAddress, done chan struct{
 	defer close(out) // notify readers
 
 	if !k.inCluster {
+		k.options.Errorf("%s: not in-cluster, nothing to do", me)
 		return nil // nothing to do
 	}
 
