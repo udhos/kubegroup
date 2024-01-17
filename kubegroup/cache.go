@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"sort"
 	"sync"
 	"time"
 
@@ -207,7 +208,7 @@ func UpdatePeers(options Options) (*Group, error) {
 
 	keys := maps.Keys(group.peers)
 	options.Debugf("%s: initial peers: %v", me, keys)
-	options.Pool.Set(keys...)
+	group.updatePeers(me, keys)
 
 	go updateLoop(group)
 
@@ -244,10 +245,15 @@ func updateLoop(group *Group) {
 				continue
 			}
 			keys := maps.Keys(group.peers)
-			group.options.Debugf("%s: updating peers: %v", me, keys)
-			group.options.Pool.Set(keys...)
+			group.updatePeers(me, keys)
 		}
 	}
+}
+
+func (g *Group) updatePeers(caller string, peers []string) {
+	sort.Strings(peers)
+	g.options.Debugf("%s: updating peers: %v", caller, peers)
+	g.options.Pool.Set(peers...)
 }
 
 func watchPeers(group *Group, ch chan<- podAddress) {
