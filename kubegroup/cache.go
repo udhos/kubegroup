@@ -49,41 +49,44 @@ func buildURL(addr, groupcachePort string) string {
 	return "http://" + addr + groupcachePort
 }
 
-// PeerGroup is an interface to plug in groupcache peering updates.
-// *groupcache.HTTPPool, created with groupcache.NewHTTPPoolOpts(),
-// implements this interface.
+// PeerGroup is an interface to plug in a target for delivering peering
+// updates. *groupcache.HTTPPool, created with
+// groupcache.NewHTTPPoolOpts(), implements this interface.
 type PeerGroup interface {
 	Set(peers ...string)
 }
 
 // Options specifies options for UpdatePeers.
 type Options struct {
-	// PeerGroup is an interface to plug in groupcache peering updates.
-	// *groupcache.HTTPPool, created with groupcache.NewHTTPPoolOpts(),
-	// implements this interface.
+	// Pool is an interface to plug in a target for delivering peering
+	// updates. *groupcache.HTTPPool, created with
+	// groupcache.NewHTTPPoolOpts(), implements this interface.
 	Pool PeerGroup
 
-	// GroupCachePort is the listening port used by groupcache peering http server.
-	// For instance, ":5000".
+	// GroupCachePort is the listening port used by groupcache peering http
+	// server. For instance, ":5000".
 	GroupCachePort string
 
-	// PodLabelKey is label key to match peer PODs, if unspecified defaults to "app".
-	// Example: If PODs are labeled as app=my-app-name, you could either set PodLabelKey
-	// to "app" or leave it empty (since "app" is the default value).
+	// PodLabelKey is label key to match peer PODs, if unspecified defaults to
+	// "app". Example: If PODs are labeled as app=my-app-name, you could
+	// either set PodLabelKey to "app" or leave it empty (since "app" is the
+	// default value).
 	PodLabelKey string
 
-	// PodLabelValue is label value to match peer PODs, if unspecified defaults to
-	// current POD label value for PodLabelKey.
+	// PodLabelValue is label value to match peer PODs, if unspecified
+	// defaults to current POD label value for PodLabelKey.
 	// Example: If PODs are labeled as app=my-app-name, you could either set
-	// PodLabelValue to "my-app-name" or leave it empty (since by default PodLabelValue
-	// takes its value from the PodLabelKey key).
+	// PodLabelValue to "my-app-name" or leave it empty (since by default
+	// PodLabelValue takes its value from the PodLabelKey key).
 	PodLabelValue string
 
-	// KubeEngine sets a plugable kube client. If unspecified, defaults to DefaultEngine.
-	// You can plug in a mocked client like KubeBogus for testing.
+	// KubeEngine sets a plugable kube client. If unspecified, defaults to
+	// DefaultEngine. You can plug in a mocked client like KubeBogus for
+	// testing.
 	Engine KubeEngine
 
-	// Cooldown sets interval between retries. If unspecified defaults to 5 seconds.
+	// Cooldown sets interval between retries. If unspecified defaults to
+	// 5 seconds.
 	Cooldown time.Duration
 
 	// Debug enables non-error logging. Errors are always logged.
