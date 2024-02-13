@@ -15,7 +15,7 @@ type KubeMockCluster struct {
 	addresses []string
 }
 
-// NewKubeMockCluster create a new KubePortCluster engine.
+// NewKubeMockCluster create a new KubeMockCluster engine.
 func NewKubeMockCluster(myAddr string, addresses []string) *KubeMockCluster {
 	return &KubeMockCluster{
 		myAddr:    myAddr,
@@ -53,7 +53,8 @@ func newPod(namespace, podName, address string) *corev1.Pod {
 	return &pod
 }
 
-func (e *KubeMockCluster) listPods(namespace string, _ /*opts*/ metav1.ListOptions) (*corev1.PodList, error) {
+func (e *KubeMockCluster) listPods(namespace string,
+	_ /*opts*/ metav1.ListOptions) (*corev1.PodList, error) {
 
 	list := corev1.PodList{
 		Items: []corev1.Pod{},
@@ -68,7 +69,8 @@ func (e *KubeMockCluster) listPods(namespace string, _ /*opts*/ metav1.ListOptio
 	return &list, nil
 }
 
-func (e *KubeMockCluster) watchPods(_ /*namespace*/ string, _ /*opts*/ metav1.ListOptions) (watch.Interface, error) {
+func (e *KubeMockCluster) watchPods(_ /*namespace*/ string,
+	_ /*opts*/ metav1.ListOptions) (watch.Interface, error) {
 	w := portClusterWatch{
 		ch: make(chan watch.Event),
 	}

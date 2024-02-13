@@ -74,13 +74,11 @@ func startGroupcache(app *application) {
 	// create cache
 	//
 
-	// https://talks.golang.org/2013/oscon-dl.slide#46
-	//
-	// 64 MB max per-node memory usage
-	app.cache = groupcache.NewGroup("files", app.groupCacheSizeBytes, groupcache.GetterFunc(
-		func(ctx context.Context, filePath string, dest groupcache.Sink) error {
+	getter := groupcache.GetterFunc(
+		func(_ /*ctx*/ context.Context, filePath string, dest groupcache.Sink) error {
 
-			log.Printf("cache miss, loading file: %s (ttl:%v)", filePath, app.groupCacheExpire)
+			log.Printf("cache miss, loading file: %s (ttl:%v)",
+				filePath, app.groupCacheExpire)
 
 			data, errRead := os.ReadFile(filePath)
 			if errRead != nil {
@@ -96,5 +94,10 @@ func startGroupcache(app *application) {
 
 			return nil
 		},
-	))
+	)
+
+	// https://talks.golang.org/2013/oscon-dl.slide#46
+	//
+	// 64 MB max per-node memory usage
+	app.cache = groupcache.NewGroup("files", app.groupCacheSizeBytes, getter)
 }

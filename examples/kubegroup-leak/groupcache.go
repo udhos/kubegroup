@@ -50,7 +50,7 @@ func startPeerWatcher(app *application, pool *groupcache.HTTPPool) {
 		//PodLabelKey:    "app",         // default is "app"
 		//PodLabelValue:  "my-app-name", // default is current PODs label value for label key
 		Debug:  false,
-		Errorf: func(format string, v ...any) {},
+		Errorf: func(_ /*format*/ string, _ /*v*/ ...any) {},
 		Engine: kubegroup.NewKubeBogus(),
 	}
 
