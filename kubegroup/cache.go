@@ -80,7 +80,7 @@ type Options struct {
 	// PodLabelValue takes its value from the PodLabelKey key).
 	PodLabelValue string
 
-	// KubeEngine sets a plugable kube client. If unspecified, defaults to
+	// Engine sets a plugable kube client. If unspecified, defaults to
 	// DefaultEngine. You can plug in a mocked client like KubeBogus for
 	// testing.
 	Engine KubeEngine
