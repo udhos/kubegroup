@@ -62,6 +62,8 @@ func startGroupcache(app *application) {
 			myAddr,
 			addresses,
 		),
+		MetricsRegisterer: app.registry,
+		MetricsGatherer:   app.registry,
 	}
 
 	if app.engineBogus {

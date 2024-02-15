@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/modernprogram/groupcache/v2"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/udhos/kubegroup/kubegroup"
 )
 
@@ -28,6 +30,8 @@ type application struct {
 	group            *kubegroup.Group
 
 	engineBogus bool
+
+	registry *prometheus.Registry
 }
 
 func main() {
@@ -45,17 +49,28 @@ func main() {
 		groupCachePort:      ":5000",
 		groupCacheSizeBytes: 1_000_000,        // limit cache at 1 MB
 		groupCacheExpire:    60 * time.Second, // cache TTL at 60s
+		registry:            prometheus.NewPedanticRegistry(),
 	}
 
 	flag.BoolVar(&app.engineBogus, "engineBogus", false, "enable bogus kube engine (for testing)")
 
 	flag.Parse()
 
+	//
+	// metrics
+	//
+	app.registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+	app.registry.MustRegister(prometheus.NewGoCollector())
+
 	app.serverMain = &http.Server{Addr: app.listenAddr, Handler: mux}
 
 	startGroupcache(app)
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { routeHandler(w, r, app) })
+	mux.HandleFunc("/", func(w http.ResponseWriter,
+		r *http.Request) {
+		routeHandler(w, r, app)
+	})
+	mux.Handle("/metrics", app.handler())
 
 	go func() {
 		//
@@ -67,6 +82,14 @@ func main() {
 	}()
 
 	shutdown(app)
+}
+
+func (app *application) handler() http.Handler {
+	registerer := app.registry
+	gatherer := app.registry
+	return promhttp.InstrumentMetricHandler(
+		registerer, promhttp.HandlerFor(gatherer, promhttp.HandlerOpts{}),
+	)
 }
 
 func routeHandler(w http.ResponseWriter, r *http.Request, app *application) {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"golang.org/x/exp/maps"
@@ -17,6 +18,7 @@ type kubeClient struct {
 	inCluster bool
 	podCache  *podInfo
 	options   Options
+	m         *metrics
 }
 
 type podInfo struct {
@@ -29,6 +31,7 @@ func newKubeClient(options Options) (kubeClient, error) {
 
 	kc := kubeClient{
 		options: options,
+		m:       newMetrics(options),
 	}
 
 	inCluster, errInit := options.Engine.initClient(options)
@@ -246,8 +249,13 @@ func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[s
 			if !ok {
 				return errWatchInputChannelClose
 			}
-			if result, ok := action(table, event, myPodName, k.options); ok {
+			if result, ok, et, ee := action(table, event, myPodName, k.options); ok {
 				out <- result
+
+				okStr := strconv.FormatBool(ok)
+				addStr := strconv.FormatBool(result.added)
+
+				k.m.events.WithLabelValues(et, okStr, addStr, ee).Inc()
 			}
 		}
 	}
@@ -255,20 +263,28 @@ func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[s
 	// not reached
 }
 
-func action(table map[string]string, event watch.Event, myPodName string, options Options) (podAddress, bool) {
+const (
+	eventError   = "event_error"
+	eventNoError = "none"
+)
+
+func action(table map[string]string, event watch.Event, myPodName string,
+	options Options) (podAddress, bool, string, string) {
 	const me = "action"
+
+	evType := string(event.Type)
 
 	var result podAddress
 
 	pod, ok := event.Object.(*corev1.Pod)
 	if !ok {
 		options.Errorf("%s: unexpected event object: %v", me, event.Object)
-		return result, false
+		return result, false, evType, eventError
 	}
 
 	if pod == nil {
 		options.Errorf("%s: unexpected nil pod from event object: %v", me, event.Object)
-		return result, false
+		return result, false, evType, eventError
 	}
 
 	name := pod.ObjectMeta.Name
@@ -284,7 +300,7 @@ func action(table map[string]string, event watch.Event, myPodName string, option
 	if name == myPodName {
 		options.Debugf("%s: event=%s pod=%s addr=%s ready=%t: ignoring my own pod",
 			me, event.Type, name, addr, ready)
-		return result, false // ignore my own pod
+		return result, false, evType, eventNoError // ignore my own pod
 	}
 
 	if event.Type == watch.Deleted {
@@ -295,7 +311,7 @@ func action(table map[string]string, event watch.Event, myPodName string, option
 	if addr == "" {
 		options.Debugf("%s: event=%s pod=%s addr=%s ready=%t: ignoring, cannot add/remove unknown address",
 			me, event.Type, name, addr, ready)
-		return result, false // ignore empty address
+		return result, false, evType, eventNoError // ignore empty address
 	}
 
 	options.Debugf("%s: event=%s pod=%s addr=%s ready=%t: success: sending update",
@@ -308,7 +324,8 @@ func action(table map[string]string, event watch.Event, myPodName string, option
 
 	result.address = addr
 	result.added = ready
-	return result, true
+
+	return result, true, evType, eventNoError
 }
 
 type podAddress struct {

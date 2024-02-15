@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/exp/maps"
 )
 
@@ -101,6 +102,10 @@ type Options struct {
 	// Fatalf optionally sets custom logging stream for fatal messages.
 	// It must terminate/abort the program.
 	Fatalf func(format string, v ...any)
+
+	MetricsNamespace  string
+	MetricsRegisterer prometheus.Registerer
+	MetricsGatherer   prometheus.Gatherer
 }
 
 func debugf(format string, v ...any) {
@@ -259,6 +264,8 @@ func (g *Group) updatePeers(caller string, peers []string) {
 	sort.Strings(peers)
 	g.options.Debugf("%s: updating peers: %v", caller, peers)
 	g.options.Pool.Set(peers...)
+	reading := float64(len(peers))
+	g.client.m.peers.Set(reading)
 }
 
 func watchPeers(group *Group, ch chan<- podAddress) {
