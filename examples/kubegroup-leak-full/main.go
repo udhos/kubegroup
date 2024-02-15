@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/modernprogram/groupcache/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/udhos/boilerplate/envconfig"
 	"github.com/udhos/kubegroup/kubegroup"
 )
@@ -26,6 +27,8 @@ type application struct {
 	//engineBogus bool
 
 	once bool
+
+	registry *prometheus.Registry
 }
 
 func main() {
@@ -42,7 +45,14 @@ func main() {
 		groupCacheSizeBytes: 1_000_000,        // limit cache at 1 MB
 		groupCacheExpire:    60 * time.Second, // cache TTL at 60s
 		once:                env.Bool("ONCE", false),
+		registry:            prometheus.NewRegistry(),
 	}
+
+	//
+	// metrics
+	//
+	app.registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+	app.registry.MustRegister(prometheus.NewGoCollector())
 
 	/*
 		flag.BoolVar(&app.engineBogus, "engineBogus", false, "enable bogus kube engine (for testing)")

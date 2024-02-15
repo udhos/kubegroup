@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type application struct {
@@ -13,6 +15,8 @@ type application struct {
 	groupCacheExpire    time.Duration
 
 	serverGroupCache *http.Server
+
+	registry *prometheus.Registry
 }
 
 func main() {

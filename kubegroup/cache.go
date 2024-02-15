@@ -103,9 +103,14 @@ type Options struct {
 	// It must terminate/abort the program.
 	Fatalf func(format string, v ...any)
 
-	MetricsNamespace  string
+	// MetricsNamespace provides optional namespace for prometheus metrics.
+	MetricsNamespace string
+
+	// MetricsRegisterer is required registerer for prometheus metrics.
 	MetricsRegisterer prometheus.Registerer
-	MetricsGatherer   prometheus.Gatherer
+
+	// MetricsRegisterer is required gatherer for prometheus metrics.
+	MetricsGatherer prometheus.Gatherer
 }
 
 func debugf(format string, v ...any) {
@@ -173,6 +178,16 @@ func UpdatePeers(options Options) (*Group, error) {
 	const me = "UpdatePeers"
 
 	options = defaultOptions(options)
+
+	//
+	// Required fields.
+	//
+	if options.MetricsRegisterer == nil {
+		panic("MetricsRegisterer is nil")
+	}
+	if options.MetricsGatherer == nil {
+		panic("MetricsGatherer is nil")
+	}
 
 	group := &Group{
 		options: options,

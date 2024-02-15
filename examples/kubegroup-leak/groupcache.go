@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/modernprogram/groupcache/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/udhos/kubegroup/kubegroup"
 )
 
@@ -41,6 +42,13 @@ func startGroupcache(app *application) *groupcache.HTTPPool {
 func startPeerWatcher(app *application, pool *groupcache.HTTPPool) {
 
 	//
+	// metrics
+	//
+	app.registry = prometheus.NewRegistry()
+	app.registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+	app.registry.MustRegister(prometheus.NewGoCollector())
+
+	//
 	// start watcher for addresses of peers
 	//
 
@@ -49,9 +57,11 @@ func startPeerWatcher(app *application, pool *groupcache.HTTPPool) {
 		GroupCachePort: app.groupCachePort,
 		//PodLabelKey:    "app",         // default is "app"
 		//PodLabelValue:  "my-app-name", // default is current PODs label value for label key
-		Debug:  false,
-		Errorf: func(_ /*format*/ string, _ /*v*/ ...any) {},
-		Engine: kubegroup.NewKubeBogus(),
+		Debug:             false,
+		Errorf:            func(_ /*format*/ string, _ /*v*/ ...any) {},
+		Engine:            kubegroup.NewKubeBogus(),
+		MetricsRegisterer: app.registry,
+		MetricsGatherer:   app.registry,
 	}
 
 	group, errGroup := kubegroup.UpdatePeers(options)

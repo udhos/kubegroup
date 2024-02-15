@@ -49,7 +49,7 @@ func main() {
 		groupCachePort:      ":5000",
 		groupCacheSizeBytes: 1_000_000,        // limit cache at 1 MB
 		groupCacheExpire:    60 * time.Second, // cache TTL at 60s
-		registry:            prometheus.NewPedanticRegistry(),
+		registry:            prometheus.NewRegistry(),
 	}
 
 	flag.BoolVar(&app.engineBogus, "engineBogus", false, "enable bogus kube engine (for testing)")
@@ -70,7 +70,7 @@ func main() {
 		r *http.Request) {
 		routeHandler(w, r, app)
 	})
-	mux.Handle("/metrics", app.handler())
+	mux.Handle("/metrics", app.metricsHandler())
 
 	go func() {
 		//
@@ -84,7 +84,7 @@ func main() {
 	shutdown(app)
 }
 
-func (app *application) handler() http.Handler {
+func (app *application) metricsHandler() http.Handler {
 	registerer := app.registry
 	gatherer := app.registry
 	return promhttp.InstrumentMetricHandler(

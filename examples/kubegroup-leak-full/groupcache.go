@@ -7,10 +7,18 @@ import (
 	"time"
 
 	"github.com/modernprogram/groupcache/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/udhos/kubegroup/kubegroup"
 )
 
 func startGroupcache(app *application) {
+
+	//
+	// metrics
+	//
+	app.registry = prometheus.NewRegistry()
+	app.registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+	app.registry.MustRegister(prometheus.NewGoCollector())
 
 	//
 	// create groupcache pool
@@ -59,9 +67,11 @@ func startGroupcache(app *application) {
 		GroupCachePort: app.groupCachePort,
 		//PodLabelKey:    "app",         // default is "app"
 		//PodLabelValue:  "my-app-name", // default is current PODs label value for label key
-		Debug:  false,
-		Engine: kubegroup.NewKubeBogus(),
-		Errorf: func(_ /*format*/ string, _ /*v*/ ...any) {},
+		Debug:             false,
+		Engine:            kubegroup.NewKubeBogus(),
+		Errorf:            func(_ /*format*/ string, _ /*v*/ ...any) {},
+		MetricsRegisterer: app.registry,
+		MetricsGatherer:   app.registry,
 	}
 
 	if app.once {
