@@ -9,7 +9,7 @@ type metrics struct {
 	registerer prometheus.Registerer
 	//gatherer   prometheus.Gatherer
 	peers  prometheus.Gauge
-	events prometheus.CounterVec
+	events *prometheus.CounterVec
 }
 
 func newMetrics(options Options) *metrics {
@@ -46,12 +46,11 @@ func newMetrics(options Options) *metrics {
 
 func newGauge(registerer prometheus.Registerer,
 	opts prometheus.GaugeOpts) prometheus.Gauge {
-	g := promauto.With(registerer).NewGauge(opts)
-	return g
+	return promauto.With(registerer).NewGauge(opts)
 }
 
 func newCounterVec(registerer prometheus.Registerer,
 	opts prometheus.CounterOpts,
-	labelValues []string) prometheus.CounterVec {
-	return *promauto.With(registerer).NewCounterVec(opts, labelValues)
+	labelValues []string) *prometheus.CounterVec {
+	return promauto.With(registerer).NewCounterVec(opts, labelValues)
 }
