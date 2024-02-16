@@ -8,8 +8,9 @@ import (
 type metrics struct {
 	registerer prometheus.Registerer
 	//gatherer   prometheus.Gatherer
-	peers  prometheus.Gauge
-	events *prometheus.CounterVec
+	peers   prometheus.Gauge
+	events  *prometheus.CounterVec
+	changes *prometheus.CounterVec
 }
 
 func newMetrics(options Options) *metrics {
@@ -38,10 +39,49 @@ func newMetrics(options Options) *metrics {
 			Name:      "events",
 			Help:      "Number of events received.",
 		},
-		[]string{"type", "action", "add", "error"},
+		[]string{"action", "change", "event_type", "event_error"},
+	)
+
+	m.events = newCounterVec(
+		m.registerer,
+		prometheus.CounterOpts{
+			Namespace: options.MetricsNamespace,
+			Subsystem: subsystem,
+			Name:      "changes",
+			Help:      "Number of peer changes.",
+		},
+		[]string{"action", "change"},
 	)
 
 	return m
+}
+
+func actionChangeString(action, change bool) (string, string) {
+	var actionStr, changeStr string
+
+	if action {
+		actionStr = "accepted"
+	} else {
+		actionStr = "ignored"
+	}
+
+	if change {
+		changeStr = "add"
+	} else {
+		changeStr = "remove"
+	}
+
+	return actionStr, changeStr
+}
+
+func (m *metrics) recordEvents(eventType, eventError string, action, change bool) {
+	actionStr, changeStr := actionChangeString(action, change)
+	m.events.WithLabelValues(actionStr, changeStr, eventType, eventError).Inc()
+}
+
+func (m *metrics) recordChanges(action, change bool) {
+	actionStr, changeStr := actionChangeString(action, change)
+	m.events.WithLabelValues(actionStr, changeStr).Inc()
 }
 
 func newGauge(registerer prometheus.Registerer,

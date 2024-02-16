@@ -266,9 +266,15 @@ func updateLoop(group *Group) {
 			} else {
 				delete(group.peers, url)
 			}
-			if len(group.peers) == count {
+
+			change := len(group.peers) != count
+
+			group.client.m.recordChanges(n.added, change) // record metrics
+
+			if change {
 				continue
 			}
+
 			keys := maps.Keys(group.peers)
 			group.updatePeers(me, keys)
 		}

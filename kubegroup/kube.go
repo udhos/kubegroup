@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"golang.org/x/exp/maps"
@@ -249,13 +248,9 @@ func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[s
 			if !ok {
 				return errWatchInputChannelClose
 			}
-			if result, ok, et, ee := action(table, event, myPodName, k.options); ok {
+			if result, accepted, eventType, eventError := action(table, event, myPodName, k.options); accepted {
 				out <- result
-
-				okStr := strconv.FormatBool(ok)
-				addStr := strconv.FormatBool(result.added)
-
-				k.m.events.WithLabelValues(et, okStr, addStr, ee).Inc()
+				k.m.recordEvents(eventType, eventError, accepted, result.added)
 			}
 		}
 	}
