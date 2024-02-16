@@ -237,8 +237,8 @@ func (k *kubeClient) watchPodsAddresses(out chan<- podAddress, done chan struct{
 				newAddrs[addr] = struct{}{}
 			}
 
-			k.options.Debugf("%s: new addresses: count=%d: %v",
-				me, count, newAddrs)
+			k.options.Debugf("%s: interval=%s new addresses: count=%d: %v",
+				me, k.options.ListerInterval, count, newAddrs)
 
 			//
 			// remove old addresses
