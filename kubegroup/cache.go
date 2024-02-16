@@ -208,11 +208,13 @@ func UpdatePeers(options Options) (*Group, error) {
 
 	group.client = kc
 
-	addresses, errList := kc.listPodsAddresses()
-	if errList != nil {
-		options.Fatalf("%s: list addresses: %v", me, errList)
-		return nil, errList
-	}
+	/*
+		addresses, errList := kc.listPodsAddresses()
+		if errList != nil {
+			options.Fatalf("%s: list addresses: %v", me, errList)
+			return nil, errList
+		}
+	*/
 
 	var myAddr string
 
@@ -229,18 +231,25 @@ func UpdatePeers(options Options) (*Group, error) {
 		return nil, errors.New("could not find my address")
 	}
 
-	addresses = append(addresses, myAddr) // force my own addr
+	//addresses = append(addresses, myAddr) // force my own addr
 
 	group.peers = map[string]bool{}
 
-	for _, addr := range addresses {
-		url := buildURL(addr, options.GroupCachePort)
-		group.peers[url] = true
-	}
+	/*
+		for _, addr := range addresses {
+			url := buildURL(addr, options.GroupCachePort)
+			group.peers[url] = true
+		}
+	*/
 
-	keys := maps.Keys(group.peers)
-	options.Debugf("%s: initial peers: %v", me, keys)
-	group.updatePeers(me, keys)
+	//u := buildURL(myAddr, options.GroupCachePort)
+	//group.peers[u] = true
+
+	/*
+		keys := maps.Keys(group.peers)
+		options.Debugf("%s: initial peers: %v", me, keys)
+		group.updatePeers(me, keys)
+	*/
 
 	go updateLoop(group)
 
@@ -290,11 +299,11 @@ func updateLoop(group *Group) {
 
 func (g *Group) updatePeers(caller string, peers []string) {
 	sort.Strings(peers)
-	count := float64(len(peers))
+	count := len(peers)
 	g.options.Debugf("%s: updating peers current=%d: %v",
 		caller, count, peers)
 	g.options.Pool.Set(peers...)
-	g.client.m.peers.Set(count)
+	g.client.m.peers.Set(float64(count))
 }
 
 func watchPeers(group *Group, ch chan<- podAddress) {

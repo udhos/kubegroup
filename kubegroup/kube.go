@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/exp/maps"
 	corev1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -120,6 +119,7 @@ func (k *kubeClient) getPodInfo() (*podInfo, error) {
 	return k.podCache, nil
 }
 
+/*
 func (k *kubeClient) listPodsAddresses() ([]string, error) {
 
 	table, errTable := k.getPodTable()
@@ -130,6 +130,7 @@ func (k *kubeClient) listPodsAddresses() ([]string, error) {
 
 	return maps.Values(table), nil
 }
+*/
 
 func (k *kubeClient) getPodTable() (map[string]string, error) {
 
