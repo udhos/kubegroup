@@ -42,7 +42,7 @@ func newMetrics(options Options) *metrics {
 		[]string{"action", "change", "event_type", "event_error"},
 	)
 
-	m.events = newCounterVec(
+	m.changes = newCounterVec(
 		m.registerer,
 		prometheus.CounterOpts{
 			Namespace: options.MetricsNamespace,
@@ -81,7 +81,7 @@ func (m *metrics) recordEvents(eventType, eventError string, action, change bool
 
 func (m *metrics) recordChanges(action, change bool) {
 	actionStr, changeStr := actionChangeString(action, change)
-	m.events.WithLabelValues(actionStr, changeStr).Inc()
+	m.changes.WithLabelValues(actionStr, changeStr).Inc()
 }
 
 func newGauge(registerer prometheus.Registerer,
