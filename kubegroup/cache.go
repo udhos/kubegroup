@@ -300,7 +300,7 @@ func updateLoop(group *Group) {
 func (g *Group) updatePeers(caller string, peers []string) {
 	sort.Strings(peers)
 	count := len(peers)
-	g.options.Debugf("%s: updating peers current=%d: %v",
+	g.options.Debugf("%s: updating peers count=%d: %v",
 		caller, count, peers)
 	g.options.Pool.Set(peers...)
 	g.client.m.peers.Set(float64(count))
