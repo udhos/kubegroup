@@ -119,19 +119,6 @@ func (k *kubeClient) getPodInfo() (*podInfo, error) {
 	return k.podCache, nil
 }
 
-/*
-func (k *kubeClient) listPodsAddresses() ([]string, error) {
-
-	table, errTable := k.getPodTable()
-	if errTable != nil {
-		k.options.Errorf("listPodsAddresses: pod table: %v", errTable)
-		return nil, errTable
-	}
-
-	return maps.Values(table), nil
-}
-*/
-
 func (k *kubeClient) getPodTable() (map[string]string, error) {
 
 	const me = "getPodTable"
@@ -191,23 +178,6 @@ func (k *kubeClient) watchPodsAddresses(out chan<- podAddress, done chan struct{
 		return nil // nothing to do
 	}
 
-	/*
-		// some going down events don't report pod address, so we retrieve addr from a local table
-		table, errTable := k.getPodTable()
-		if errTable != nil {
-			k.options.Errorf("%s: table: %v", me, errTable)
-			return errTable
-		}
-
-		k.options.Debugf("%s: initial table: %v", me, table)
-
-		podInfo, errInfo := k.getPodInfo()
-		if errInfo != nil {
-			k.options.Errorf("%s: pod info: %v", me, errInfo)
-			return errInfo
-		}
-	*/
-
 	ticker := time.NewTicker(k.options.ListerInterval)
 
 	defer ticker.Stop()
@@ -258,87 +228,9 @@ func (k *kubeClient) watchPodsAddresses(out chan<- podAddress, done chan struct{
 			}
 
 			addresses = newAddrs // replace addr set
-
-			/*
-				default:
-					errWatch := k.watchOnce(out, podInfo, table, done)
-					k.options.Errorf("%s: %v", me, errWatch)
-					if errWatch != errWatchInputChannelClose {
-						return errWatch
-					}
-					k.options.Errorf("%s: retrying in %v", me, k.options.Cooldown)
-					time.Sleep(k.options.Cooldown)
-			*/
 		}
 	}
 }
-
-/*
-const (
-	eventError   = "event_error"
-	eventNoError = "none"
-)
-
-func action(table map[string]string, event watch.Event, myPodName string,
-	options Options) (podAddress, bool, string, string) {
-	const me = "action"
-
-	evType := string(event.Type)
-
-	var result podAddress
-
-	pod, ok := event.Object.(*corev1.Pod)
-	if !ok {
-		options.Errorf("%s: unexpected event object: %v", me, event.Object)
-		return result, false, evType, eventError
-	}
-
-	if pod == nil {
-		options.Errorf("%s: unexpected nil pod from event object: %v", me, event.Object)
-		return result, false, evType, eventError
-	}
-
-	name := pod.ObjectMeta.Name
-
-	addr := pod.Status.PodIP
-	if addr == "" {
-		// some going down events don't report pod address, so we retrieve it from a local table
-		addr = table[name]
-	}
-
-	ready := isPodReady(pod)
-
-	if name == myPodName {
-		options.Debugf("%s: event=%s pod=%s addr=%s ready=%t: ignoring my own pod",
-			me, event.Type, name, addr, ready)
-		return result, false, evType, eventNoError // ignore my own pod
-	}
-
-	if event.Type == watch.Deleted {
-		// pod name/address no longer needed
-		delete(table, name)
-	}
-
-	if addr == "" {
-		options.Debugf("%s: event=%s pod=%s addr=%s ready=%t: ignoring, cannot add/remove unknown address",
-			me, event.Type, name, addr, ready)
-		return result, false, evType, eventNoError // ignore empty address
-	}
-
-	options.Debugf("%s: event=%s pod=%s addr=%s ready=%t: success: sending update",
-		me, event.Type, name, addr, ready)
-
-	if event.Type != watch.Deleted {
-		// record address for future going down events that don't report pod address
-		table[name] = addr
-	}
-
-	result.address = addr
-	result.added = ready
-
-	return result, true, evType, eventNoError
-}
-*/
 
 type podAddress struct {
 	address string

@@ -2,7 +2,6 @@
 package kubegroup
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -182,8 +181,6 @@ func (g *Group) Close() {
 // UpdatePeers continuously updates groupcache peers.
 func UpdatePeers(options Options) (*Group, error) {
 
-	const me = "UpdatePeers"
-
 	options = defaultOptions(options)
 
 	//
@@ -208,48 +205,7 @@ func UpdatePeers(options Options) (*Group, error) {
 
 	group.client = kc
 
-	/*
-		addresses, errList := kc.listPodsAddresses()
-		if errList != nil {
-			options.Fatalf("%s: list addresses: %v", me, errList)
-			return nil, errList
-		}
-	*/
-
-	var myAddr string
-
-	{
-		var errAddr error
-		myAddr, errAddr = options.Engine.findMyAddress()
-		if errAddr != nil {
-			options.Errorf("%s: %v", me, errAddr)
-			return nil, errAddr
-		}
-	}
-
-	if myAddr == "" {
-		return nil, errors.New("could not find my address")
-	}
-
-	//addresses = append(addresses, myAddr) // force my own addr
-
 	group.peers = map[string]bool{}
-
-	/*
-		for _, addr := range addresses {
-			url := buildURL(addr, options.GroupCachePort)
-			group.peers[url] = true
-		}
-	*/
-
-	//u := buildURL(myAddr, options.GroupCachePort)
-	//group.peers[u] = true
-
-	/*
-		keys := maps.Keys(group.peers)
-		options.Debugf("%s: initial peers: %v", me, keys)
-		group.updatePeers(me, keys)
-	*/
 
 	go updateLoop(group)
 
