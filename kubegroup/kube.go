@@ -10,7 +10,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
 )
 
 type kubeClient struct {
@@ -136,7 +135,7 @@ func (k *kubeClient) getPodTable() (map[string]string, error) {
 
 	const me = "getPodTable"
 
-	table := map[string]string{}
+	table := map[string]string{} // name => addr
 
 	if !k.inCluster {
 		name := getPodName(k.options.Errorf)
@@ -191,73 +190,89 @@ func (k *kubeClient) watchPodsAddresses(out chan<- podAddress, done chan struct{
 		return nil // nothing to do
 	}
 
-	// some going down events don't report pod address, so we retrieve addr from a local table
-	table, errTable := k.getPodTable()
-	if errTable != nil {
-		k.options.Errorf("%s: table: %v", me, errTable)
-		return errTable
-	}
+	/*
+		// some going down events don't report pod address, so we retrieve addr from a local table
+		table, errTable := k.getPodTable()
+		if errTable != nil {
+			k.options.Errorf("%s: table: %v", me, errTable)
+			return errTable
+		}
 
-	k.options.Debugf("%s: initial table: %v", me, table)
+		k.options.Debugf("%s: initial table: %v", me, table)
 
-	podInfo, errInfo := k.getPodInfo()
-	if errInfo != nil {
-		k.options.Errorf("%s: pod info: %v", me, errInfo)
-		return errInfo
-	}
+		podInfo, errInfo := k.getPodInfo()
+		if errInfo != nil {
+			k.options.Errorf("%s: pod info: %v", me, errInfo)
+			return errInfo
+		}
+	*/
+
+	ticker := time.NewTicker(k.options.ListerInterval)
+
+	defer ticker.Stop()
+
+	addresses := map[string]struct{}{} // addr set
 
 	for {
 		select {
+
 		case <-done:
 			k.options.Debugf("%s: done channel closed, exiting", me)
 			return nil
-		default:
-			errWatch := k.watchOnce(out, podInfo, table, done)
-			k.options.Errorf("%s: %v", me, errWatch)
-			if errWatch != errWatchInputChannelClose {
-				return errWatch
+
+		case <-ticker.C:
+			tab, errTable := k.getPodTable()
+			if errTable != nil {
+				k.options.Errorf("%s: table: %v", me, errTable)
+				continue
 			}
-			k.options.Errorf("%s: retrying in %v", me, k.options.Cooldown)
-			time.Sleep(k.options.Cooldown)
+
+			count := len(tab)
+
+			//
+			// build new address set
+			//
+			newAddrs := make(map[string]struct{}, count)
+			for _, addr := range tab {
+				newAddrs[addr] = struct{}{}
+			}
+
+			k.options.Debugf("%s: new addresses: count=%d: %v",
+				me, count, newAddrs)
+
+			//
+			// remove old addresses
+			//
+			for addr := range addresses {
+				if _, found := newAddrs[addr]; !found {
+					out <- podAddress{address: addr, added: false}
+				}
+			}
+
+			//
+			// add new addresses
+			//
+			for addr := range newAddrs {
+				out <- podAddress{address: addr, added: true}
+			}
+
+			addresses = newAddrs // replace addr set
+
+			/*
+				default:
+					errWatch := k.watchOnce(out, podInfo, table, done)
+					k.options.Errorf("%s: %v", me, errWatch)
+					if errWatch != errWatchInputChannelClose {
+						return errWatch
+					}
+					k.options.Errorf("%s: retrying in %v", me, k.options.Cooldown)
+					time.Sleep(k.options.Cooldown)
+			*/
 		}
 	}
 }
 
-var errWatchInputChannelClose = errors.New("watchOnce: input channel has been closed")
-
-func (k *kubeClient) watchOnce(out chan<- podAddress, info *podInfo, table map[string]string, done chan struct{}) error {
-	const me = "watchOnce"
-
-	myPodName := info.name
-
-	watcher, errWatch := k.options.Engine.watchPods(info.namespace, info.listOptions)
-	if errWatch != nil {
-		k.options.Errorf("%s: watch: %v", me, errWatch)
-		return errWatch
-	}
-
-	defer watcher.Stop()
-
-	in := watcher.ResultChan()
-	for {
-		select {
-		case <-done:
-			k.options.Debugf("%s: done channel closed, exiting", me)
-			return nil
-		case event, ok := <-in:
-			if !ok {
-				return errWatchInputChannelClose
-			}
-			if result, accepted, eventType, eventError := action(table, event, myPodName, k.options); accepted {
-				out <- result
-				k.m.recordEvents(eventType, eventError, accepted, result.added)
-			}
-		}
-	}
-
-	// not reached
-}
-
+/*
 const (
 	eventError   = "event_error"
 	eventNoError = "none"
@@ -322,6 +337,7 @@ func action(table map[string]string, event watch.Event, myPodName string,
 
 	return result, true, evType, eventNoError
 }
+*/
 
 type podAddress struct {
 	address string

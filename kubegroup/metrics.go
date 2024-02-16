@@ -8,8 +8,8 @@ import (
 type metrics struct {
 	registerer prometheus.Registerer
 	//gatherer   prometheus.Gatherer
-	peers   prometheus.Gauge
-	events  *prometheus.CounterVec
+	peers prometheus.Gauge
+	//events  *prometheus.CounterVec
 	changes *prometheus.CounterVec
 }
 
@@ -31,16 +31,18 @@ func newMetrics(options Options) *metrics {
 		},
 	)
 
-	m.events = newCounterVec(
-		m.registerer,
-		prometheus.CounterOpts{
-			Namespace: options.MetricsNamespace,
-			Subsystem: subsystem,
-			Name:      "events",
-			Help:      "Number of events received.",
-		},
-		[]string{"action", "change", "event_type", "event_error"},
-	)
+	/*
+		m.events = newCounterVec(
+			m.registerer,
+			prometheus.CounterOpts{
+				Namespace: options.MetricsNamespace,
+				Subsystem: subsystem,
+				Name:      "events",
+				Help:      "Number of events received.",
+			},
+			[]string{"action", "change", "event_type", "event_error"},
+		)
+	*/
 
 	m.changes = newCounterVec(
 		m.registerer,
@@ -74,10 +76,12 @@ func actionChangeString(action, change bool) (string, string) {
 	return actionStr, changeStr
 }
 
+/*
 func (m *metrics) recordEvents(eventType, eventError string, action, change bool) {
 	actionStr, changeStr := actionChangeString(action, change)
 	m.events.WithLabelValues(actionStr, changeStr, eventType, eventError).Inc()
 }
+*/
 
 func (m *metrics) recordChanges(action, change bool) {
 	actionStr, changeStr := actionChangeString(action, change)

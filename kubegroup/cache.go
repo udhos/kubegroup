@@ -111,6 +111,10 @@ type Options struct {
 
 	// MetricsRegisterer is required gatherer for prometheus metrics.
 	MetricsGatherer prometheus.Gatherer
+
+	// ListerInterval defines interval between pod listing.
+	// If unspecified, defaults to 20s.
+	ListerInterval time.Duration
 }
 
 func debugf(format string, v ...any) {
@@ -147,6 +151,9 @@ func defaultOptions(options Options) Options {
 	}
 	if options.Fatalf == nil {
 		options.Fatalf = fatalf
+	}
+	if options.ListerInterval == 0 {
+		options.ListerInterval = 20 * time.Second
 	}
 	return options
 }
