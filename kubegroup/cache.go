@@ -230,24 +230,28 @@ func updateLoop(group *Group) {
 				return
 			}
 			url := buildURL(n.address, group.options.GroupCachePort)
-			group.options.Debugf("%s: peer=%s added=%t current peers: %v",
-				me, url, n.added, maps.Keys(group.peers))
-			count := len(group.peers)
+
+			countOld := len(group.peers)
 			if n.added {
 				group.peers[url] = true
 			} else {
 				delete(group.peers, url)
 			}
+			countNew := len(group.peers)
+			keys := maps.Keys(group.peers)
 
-			change := len(group.peers) != count
+			accepted := countNew != countOld // accept or ignore
+			change := n.added                // add or remove
 
-			group.client.m.recordChanges(n.added, change) // record metrics
+			group.options.Debugf("%s: peer=%s accepted=%t add=%t count_old=%d count_new=%d current peers: %v",
+				me, url, accepted, change, countOld, countNew, keys)
 
-			if change {
+			group.client.m.recordChanges(accepted, change) // record metrics
+
+			if !accepted {
 				continue
 			}
 
-			keys := maps.Keys(group.peers)
 			group.updatePeers(me, keys)
 		}
 	}
