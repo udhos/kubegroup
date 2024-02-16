@@ -283,10 +283,11 @@ func updateLoop(group *Group) {
 
 func (g *Group) updatePeers(caller string, peers []string) {
 	sort.Strings(peers)
-	g.options.Debugf("%s: updating peers: %v", caller, peers)
+	count := float64(len(peers))
+	g.options.Debugf("%s: updating peers current=%d: %v",
+		caller, count, peers)
 	g.options.Pool.Set(peers...)
-	reading := float64(len(peers))
-	g.client.m.peers.Set(reading)
+	g.client.m.peers.Set(count)
 }
 
 func watchPeers(group *Group, ch chan<- podAddress) {
