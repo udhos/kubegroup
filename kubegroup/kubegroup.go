@@ -187,11 +187,11 @@ func (g *Group) onUpdate(pods []podinformer.Pod) {
 	size := len(pods)
 	g.debugf("%s: %d", me, size)
 
-	var peers []string
+	peers := make([]string, 0, size)
 
 	for i, p := range pods {
-		log.Printf("%s: %d/%d: namespace=%s pod=%s ip=%s ready=%t",
-			me, i, size, p.Namespace, p.Name, p.IP, p.Ready)
+		g.debugf("%s: %d/%d: namespace=%s pod=%s ip=%s ready=%t",
+			me, i+1, size, p.Namespace, p.Name, p.IP, p.Ready)
 
 		if p.Ready {
 			peers = append(peers, buildURL(p.IP, g.options.GroupCachePort))
