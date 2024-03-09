@@ -8,6 +8,13 @@
 
 Peer pods are automatically discovered by continuously watching for other pods with the same label `app=<value>` as in the current pod, in current pod's namespace.
 
+# Metrics
+
+```
+kubegroup_peers: Gauge: Number of peer PODs discovered.
+kubegroup_events: Counter: Number of events received.
+```
+
 # Usage
 
 Import the package `github.com/udhos/kubegroup/kubegroup`.
