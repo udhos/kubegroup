@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/modernprogram/groupcache/v2"
+	"github.com/udhos/kube/kubeclient"
 	"github.com/udhos/kubegroup/kubegroup"
 )
 
@@ -51,18 +52,23 @@ func startGroupcache(app *application) {
 	// start watcher for addresses of peers
 	//
 
-	options := kubegroup.Options{
-		Pool:           pool,
-		GroupCachePort: app.groupCachePort,
-		//PodLabelKey:    "app",         // default is "app"
-		//PodLabelValue:  "my-app-name", // default is current PODs label value for label key
-		Debug:             true,
-		MetricsRegisterer: app.registry,
-		MetricsGatherer:   app.registry,
+	const debug = true
+
+	clientsetOpt := kubeclient.Options{DebugLog: debug}
+	clientset, errClientset := kubeclient.New(clientsetOpt)
+	if errClientset != nil {
+		log.Fatalf("startGroupcache: kubeclient: %v", errClientset)
 	}
 
-	if app.engineBogus {
-		options.Engine = kubegroup.NewKubeBogus()
+	options := kubegroup.Options{
+		Client:                clientset,
+		Pool:                  pool,
+		LabelSelector:         "app=miniapi",
+		GroupCachePort:        app.groupCachePort,
+		Debug:                 debug,
+		MetricsRegisterer:     app.registry,
+		MetricsGatherer:       app.registry,
+		ForceNamespaceDefault: true,
 	}
 
 	group, errGroup := kubegroup.UpdatePeers(options)

@@ -34,16 +34,24 @@ go func() {
 }()
 
 // 3. spawn peering autodiscovery
+
+clientset, errClientset := kubeclient.New(kubeclient.Options{})
+if errClientset != nil {
+  log.Fatalf("startGroupcache: kubeclient: %v", errClientset)
+}
+
 options := kubegroup.Options{
-    Pool:           pool,
-    GroupCachePort: groupCachePort,
-    //PodLabelKey:    "app",         // default is "app"
-    //PodLabelValue:  "my-app-name", // default is current PODs label value for label key
+  Client:                clientset,
+  Pool:                  pool,
+  LabelSelector:         "app=my-app",
+  GroupCachePort:        groupCachePort,
+  MetricsRegisterer:     prometheus.DefaultRegisterer,
+  MetricsGatherer:       prometheus.DefaultGatherer,
 }
 
 group, errGroup := kubegroup.UpdatePeers(options)
 if errGroup != nil {
-    log.Fatalf("kubegroup: %v", errGroup)
+  log.Fatalf("kubegroup: %v", errGroup)
 }
 
 // 4. create groupcache groups, etc: groupOne := groupcache.NewGroup()

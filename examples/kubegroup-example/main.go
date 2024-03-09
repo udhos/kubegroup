@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -29,8 +28,6 @@ type application struct {
 	cache            *groupcache.Group
 	group            *kubegroup.Group
 
-	engineBogus bool
-
 	registry *prometheus.Registry
 }
 
@@ -45,10 +42,6 @@ func main() {
 		groupCacheExpire:    60 * time.Second, // cache TTL at 60s
 		registry:            prometheus.NewRegistry(),
 	}
-
-	flag.BoolVar(&app.engineBogus, "engineBogus", false, "enable bogus kube engine (for testing)")
-
-	flag.Parse()
 
 	//
 	// metrics
