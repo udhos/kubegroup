@@ -37,7 +37,7 @@ go func() {
 
 clientset, errClientset := kubeclient.New(kubeclient.Options{})
 if errClientset != nil {
-  log.Fatalf("startGroupcache: kubeclient: %v", errClientset)
+  log.Fatalf("kubeclient: %v", errClientset)
 }
 
 options := kubegroup.Options{
