@@ -69,6 +69,8 @@ func main() {
 	}()
 
 	shutdown(app)
+
+	log.Printf("exiting")
 }
 
 func (app *application) metricsHandler() http.Handler {
@@ -115,8 +117,6 @@ func shutdown(app *application) {
 
 	httpShutdown(app.serverMain)
 	httpShutdown(app.serverGroupCache)
-
-	log.Printf("exiting")
 }
 
 func httpShutdown(server *http.Server) {
