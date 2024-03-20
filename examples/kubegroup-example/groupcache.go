@@ -18,23 +18,16 @@ func startGroupcache(app *application) {
 	// create groupcache pool
 	//
 
-	var myURL string
-	for myURL == "" {
-		var errURL error
-		myURL, errURL = kubegroup.FindMyURL(app.groupCachePort)
-		if errURL != nil {
-			log.Printf("my URL: %v", errURL)
-		}
-		if myURL == "" {
-			const cooldown = 5 * time.Second
-			log.Printf("could not find my URL, sleeping %v", cooldown)
-			time.Sleep(cooldown)
-		}
+	myURL, errURL := kubegroup.FindMyURL(app.groupCachePort)
+	if errURL != nil {
+		log.Fatalf("my URL: %v", errURL)
 	}
-
 	log.Printf("groupcache my URL: %s", myURL)
 
-	pool := groupcache.NewHTTPPoolOpts(myURL, &groupcache.HTTPPoolOptions{})
+	workspace := groupcache.NewWorkspace()
+
+	pool := groupcache.NewHTTPPoolOptsWithWorkspace(workspace, myURL,
+		&groupcache.HTTPPoolOptions{})
 
 	//
 	// start groupcache server
@@ -107,5 +100,6 @@ func startGroupcache(app *application) {
 	// https://talks.golang.org/2013/oscon-dl.slide#46
 	//
 	// 64 MB max per-node memory usage
-	app.cache = groupcache.NewGroup("files", app.groupCacheSizeBytes, getter)
+	app.cache = groupcache.NewGroupWithWorkspace(workspace, "files",
+		app.groupCacheSizeBytes, getter)
 }
