@@ -78,11 +78,13 @@ type Options struct {
 	// Pool is an interface to plug in a target for delivering peering
 	// updates. *groupcache.HTTPPool, created with
 	// groupcache.NewHTTPPoolOpts(), implements this interface.
+	// Pool supports groupcache2.
 	Pool PeerGroup
 
 	// PeerSet is an interface to plug in a target for delivering peering
 	// updates. *groupcache.Daemon, created with
 	// groupcache.ListenAndServe(), implements this interface.
+	// PeerSet supports groupcache3.
 	Peers PeerSet
 
 	// Client provides kubernetes client.
@@ -215,6 +217,10 @@ func (g *Group) onUpdate(pods []podinformer.Pod) {
 
 	if g.options.Peers != nil {
 
+		//
+		// groupcache3
+		//
+
 		peers := make([]peer.Info, 0, size)
 
 		for i, p := range pods {
@@ -238,6 +244,11 @@ func (g *Group) onUpdate(pods []podinformer.Pod) {
 		}
 
 	} else {
+
+		//
+		// groupcache2
+		//
+
 		peers := make([]string, 0, size)
 
 		for i, p := range pods {
