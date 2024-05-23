@@ -106,7 +106,7 @@ if errGroup != nil {
 
 var data []byte
 
-errGet := cache.Get(r.Context(), "filename.txt", transport.AllocatingByteSliceSink(&data))
+errGet := cache.Get(context.TODO(), "filename.txt", transport.AllocatingByteSliceSink(&data))
 if errGet != nil {
   log.Printf("cache error: %v", errGet)
 } else {
