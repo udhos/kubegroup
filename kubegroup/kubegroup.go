@@ -26,7 +26,7 @@ func FindMyURL(groupcachePort string) (string, error) {
 	return url, nil
 }
 
-// FindMyAddress returns my adress.
+// FindMyAddress returns my address.
 func FindMyAddress() (string, error) {
 	return findMyAddr()
 }
