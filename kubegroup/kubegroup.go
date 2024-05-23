@@ -2,11 +2,13 @@
 package kubegroup
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
 	"os"
 
+	"github.com/groupcache/groupcache-go/v3/transport/peer"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/udhos/kubepodinformer/podinformer"
 	"k8s.io/client-go/kubernetes"
@@ -22,6 +24,11 @@ func FindMyURL(groupcachePort string) (string, error) {
 	}
 	url := buildURL(addr, groupcachePort)
 	return url, nil
+}
+
+// FindMyAddress returns my adress.
+func FindMyAddress() (string, error) {
+	return findMyAddr()
 }
 
 func findMyAddr() (string, error) {
@@ -59,12 +66,24 @@ type PeerGroup interface {
 	Set(peers ...string)
 }
 
+// PeerSet is an interface to plug in a target for delivering peering
+// updates. *groupcache.daemon, created with
+// groupcache.ListenAndServe(), implements this interface.
+type PeerSet interface {
+	SetPeers(ctx context.Context, peers []peer.Info) error
+}
+
 // Options specifies options for UpdatePeers.
 type Options struct {
 	// Pool is an interface to plug in a target for delivering peering
 	// updates. *groupcache.HTTPPool, created with
 	// groupcache.NewHTTPPoolOpts(), implements this interface.
 	Pool PeerGroup
+
+	// PeerSet is an interface to plug in a target for delivering peering
+	// updates. *groupcache.daemon, created with
+	// groupcache.ListenAndServe(), implements this interface.
+	Peers PeerSet
 
 	// Client provides kubernetes client.
 	Client *kubernetes.Clientset
@@ -100,6 +119,7 @@ type Group struct {
 	options  Options
 	informer *podinformer.PodInformer
 	m        *metrics
+	myAddr   string
 }
 
 func (g *Group) debugf(format string, v ...any) {
@@ -124,8 +144,8 @@ func UpdatePeers(options Options) (*Group, error) {
 	//
 	// Required fields.
 	//
-	if options.Pool == nil {
-		panic("Pool is nil")
+	if options.Pool == nil && options.Peers == nil {
+		panic("Pool and Peers are both nil")
 	}
 	if options.Client == nil {
 		panic("Client is nil")
@@ -158,9 +178,15 @@ func UpdatePeers(options Options) (*Group, error) {
 		namespace = ns
 	}
 
+	myAddr, errAddr := findMyAddr()
+	if errAddr != nil {
+		return nil, errAddr
+	}
+
 	group := &Group{
 		options: options,
 		m:       newMetrics(options.MetricsNamespace, options.MetricsRegisterer),
+		myAddr:  myAddr,
 	}
 
 	optionsInformer := podinformer.Options{
@@ -187,18 +213,44 @@ func (g *Group) onUpdate(pods []podinformer.Pod) {
 	size := len(pods)
 	g.debugf("%s: %d", me, size)
 
-	peers := make([]string, 0, size)
+	if g.options.Peers != nil {
 
-	for i, p := range pods {
-		g.debugf("%s: %d/%d: namespace=%s pod=%s ip=%s ready=%t",
-			me, i+1, size, p.Namespace, p.Name, p.IP, p.Ready)
+		peers := make([]peer.Info, 0, size)
 
-		if p.Ready {
-			peers = append(peers, buildURL(p.IP, g.options.GroupCachePort))
+		for i, p := range pods {
+			hostPort := p.IP + g.options.GroupCachePort
+			isSelf := g.myAddr == p.IP
+
+			g.debugf("%s: %d/%d: namespace=%s pod=%s ip=%s ready=%t host_port=%s is_self=%t",
+				me, i+1, size, p.Namespace, p.Name, p.IP, p.Ready, hostPort, isSelf)
+
+			if p.Ready {
+				peers = append(peers, peer.Info{
+					Address: hostPort,
+					IsSelf:  isSelf,
+				})
+			}
 		}
-	}
 
-	g.options.Pool.Set(peers...)
+		err := g.options.Peers.SetPeers(context.TODO(), peers)
+		if err != nil {
+			g.errorf("set peers: error: %v", err)
+		}
+
+	} else {
+		peers := make([]string, 0, size)
+
+		for i, p := range pods {
+			g.debugf("%s: %d/%d: namespace=%s pod=%s ip=%s ready=%t",
+				me, i+1, size, p.Namespace, p.Name, p.IP, p.Ready)
+
+			if p.Ready {
+				peers = append(peers, buildURL(p.IP, g.options.GroupCachePort))
+			}
+		}
+
+		g.options.Pool.Set(peers...)
+	}
 
 	g.m.events.Inc()
 	g.m.peers.Set(float64(size))
