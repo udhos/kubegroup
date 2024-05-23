@@ -15,7 +15,113 @@ kubegroup_peers: Gauge: Number of peer PODs discovered.
 kubegroup_events: Counter: Number of events received.
 ```
 
-# Usage
+# Usage for groupcache3
+
+Import these packages.
+
+```go
+import (
+	"github.com/groupcache/groupcache-go/v3"
+	"github.com/groupcache/groupcache-go/v3/transport"
+	"github.com/udhos/kube/kubeclient"
+	"github.com/udhos/kubegroup/kubegroup"
+)
+```
+
+Initialize groupcache3 and add kubegroup auto-discovery with `kubegroup.UpdatePeers()`.
+
+```go
+groupcachePort := ":5000"
+
+// 1. start groupcache3 daemon
+
+myIP, errAddr := kubegroup.FindMyAddress()
+if errAddr != nil {
+  log.Fatalf("find my address: %v", errAddr)
+}
+
+myAddr := myIP + groupCachePort
+
+daemon, errDaemon := groupcache.ListenAndServe(context.TODO(), myAddr, groupcache.Options{})
+if errDaemon != nil {
+  log.Fatalf("groupcache daemon: %v", errDaemon)
+}
+
+// 2. spawn peering autodiscovery
+
+const debug = true
+
+clientsetOpt := kubeclient.Options{DebugLog: debug}
+clientset, errClientset := kubeclient.New(clientsetOpt)
+if errClientset != nil {
+  log.Fatalf("kubeclient: %v", errClientset)
+}
+
+options := kubegroup.Options{
+  Client:                clientset,
+  Peers:                 daemon,
+  LabelSelector:         "app=miniapi",
+  GroupCachePort:        groupCachePort,
+  Debug:                 debug,
+  MetricsRegisterer:     prometheus.DefaultRegisterer,
+  MetricsGatherer:       prometheus.DefaultGatherer,
+}
+
+discoveryGroup, errDiscovery := kubegroup.UpdatePeers(options)
+if errDiscovery != nil {
+  log.Fatalf("kubegroup: %v", errDiscovery)
+}
+
+// 3. create groupcache groups
+
+ttl := time.Minute
+
+getter := groupcache.GetterFunc(
+  func(_ context.Context, filePath string, dest transport.Sink) error {
+
+    log.Printf("cache miss, loading file: %s (ttl:%v)",
+      filePath, ttl)
+
+    data, errRead := os.ReadFile(filePath)
+    if errRead != nil {
+      return errRead
+    }
+
+    var expire time.Time // zero value for expire means no expiration
+    if app.groupCacheExpire != 0 {
+      expire = time.Now().Add(ttl)
+    }
+
+    return dest.SetBytes(data, expire)
+  },
+)
+
+cache, errGroup := daemon.NewGroup("files", 1_000_000, getter)
+if errGroup != nil {
+  log.Fatalf("new group: %v", errGroup)
+}
+
+// 4. query cache
+
+var data []byte
+
+errGet := cache.Get(context.TODO(), "filename.txt", transport.AllocatingByteSliceSink(&data))
+if errGet != nil {
+  log.Printf("cache error: %v", errGet)
+} else {
+  log.Printf("cache response: %s", string(data))
+}
+
+// 5. when you need to stop kubegroup auto-discovery
+
+discoveryGroup.Close() // release kubegroup resources
+```
+
+# Example for groupcache3
+
+See [./examples/kubegroup-example3](./examples/kubegroup-example3)
+
+# Usage for groupcache2
 
 Import the package `github.com/udhos/kubegroup/kubegroup`.
 
@@ -23,7 +129,7 @@ Import the package `github.com/udhos/kubegroup/kubegroup`.
 import "github.com/udhos/kubegroup/kubegroup"
 ```
 
-Spawn a goroutine for `kubegroup.UpdatePeers(pool, groupcachePort)`.
+Initialize auto-discovery with `kubegroup.UpdatePeers()`.
 
 ```go
 groupcachePort := ":5000"
