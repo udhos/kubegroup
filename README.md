@@ -17,11 +17,18 @@ kubegroup_events: Counter: Number of events received.
 
 # Usage for groupcache3
 
-Import the package `github.com/udhos/kubegroup/kubegroup`.
+Import these packages.
 
 ```go
-import "github.com/udhos/kubegroup/kubegroup"
+import (
+	"github.com/groupcache/groupcache-go/v3"
+	"github.com/groupcache/groupcache-go/v3/transport"
+	"github.com/udhos/kube/kubeclient"
+	"github.com/udhos/kubegroup/kubegroup"
+)
 ```
+
+Initialize groupcache3 and add kubegroup auto-discovery with `kubegroup.UpdatePeers()`.
 
 ```go
 groupcachePort := ":5000"
@@ -118,6 +125,8 @@ Import the package `github.com/udhos/kubegroup/kubegroup`.
 ```go
 import "github.com/udhos/kubegroup/kubegroup"
 ```
+
+Initialize auto-discovery with `kubegroup.UpdatePeers()`.
 
 ```go
 groupcachePort := ":5000"
