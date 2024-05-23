@@ -68,7 +68,7 @@ options := kubegroup.Options{
   ForceNamespaceDefault: true,
 }
 
-group, errDiscovery := kubegroup.UpdatePeers(options)
+discoveryGroup, errDiscovery := kubegroup.UpdatePeers(options)
 if errDiscovery != nil {
   log.Fatalf("kubegroup: %v", errDiscovery)
 }
@@ -112,6 +112,10 @@ if errGet != nil {
 } else {
   log.Printf("cache response: %s", string(data))
 }
+
+// 5. when you need to stop kubegroup auto-discovery
+
+discoveryGroup.Close() // release kubegroup resources
 ```
 
 # Example for groupcache3
