@@ -81,7 +81,7 @@ type Options struct {
 	Pool PeerGroup
 
 	// PeerSet is an interface to plug in a target for delivering peering
-	// updates. *groupcache.daemon, created with
+	// updates. *groupcache.Daemon, created with
 	// groupcache.ListenAndServe(), implements this interface.
 	Peers PeerSet
 

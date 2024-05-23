@@ -65,7 +65,6 @@ options := kubegroup.Options{
   Debug:                 debug,
   MetricsRegisterer:     prometheus.DefaultRegisterer,
   MetricsGatherer:       prometheus.DefaultGatherer,
-  ForceNamespaceDefault: true,
 }
 
 discoveryGroup, errDiscovery := kubegroup.UpdatePeers(options)
