@@ -88,8 +88,8 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/udhos/kube v0.0.1 h1:FFWNyn+xf4aHZTaldKZuueu6ZQqmJR76I4OrfeJo9W4=
-github.com/udhos/kube v0.0.1/go.mod h1:UgnFniZC6fLV5vEvAqpDvN+rY+aQJwzRM1ejhK2yzEI=
+github.com/udhos/kube v0.1.0 h1:4B0YFaKXAhdCMfjtFqV6Atj/VgMVY0bPWI22qNICKVQ=
+github.com/udhos/kube v0.1.0/go.mod h1:BBeuypMPA4i00xk8WuoRpJgM1qSr0PH7pKbBQwT7gZA=
 github.com/udhos/kubepodinformer v0.1.0 h1:jgloet7tCnXnsMhOp2CI0o6jnQtE+2Wros+/rem2GEc=
 github.com/udhos/kubepodinformer v0.1.0/go.mod h1:rSYevK46dWPXOmhvnG0FFkPDYHvOUxkeV4Nsz+OHpIY=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

@@ -6,7 +6,7 @@ require (
 	github.com/groupcache/groupcache-go/v3 v3.0.0
 	github.com/modernprogram/groupcache/v2 v2.6.0
 	github.com/prometheus/client_golang v1.19.0
-	github.com/udhos/kube v0.0.1
+	github.com/udhos/kube v0.1.0
 	github.com/udhos/kubepodinformer v0.1.0
 	k8s.io/client-go v0.29.3
 )
