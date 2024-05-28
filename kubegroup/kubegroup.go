@@ -81,10 +81,10 @@ type Options struct {
 	// Pool supports groupcache2.
 	Pool PeerGroup
 
-	// PeerSet is an interface to plug in a target for delivering peering
+	// Peers is an interface to plug in a target for delivering peering
 	// updates. *groupcache.Daemon, created with
 	// groupcache.ListenAndServe(), implements this interface.
-	// PeerSet supports groupcache3.
+	// Peers supports groupcache3.
 	Peers PeerSet
 
 	// Client provides kubernetes client.
