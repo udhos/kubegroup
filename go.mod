@@ -4,9 +4,9 @@ go 1.23.3
 
 require (
 	github.com/groupcache/groupcache-go/v3 v3.0.0
-	github.com/modernprogram/groupcache/v2 v2.6.2
+	github.com/modernprogram/groupcache/v2 v2.6.3
 	github.com/prometheus/client_golang v1.20.5
-	github.com/udhos/kube v1.0.0
+	github.com/udhos/kube v1.0.1
 	github.com/udhos/kubepodinformer v1.0.0
 	k8s.io/client-go v0.31.3
 )
