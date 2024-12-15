@@ -99,9 +99,16 @@ func startGroupcache(app *application) {
 
 	const purgeExpired = true
 
+	groupcacheOptions := groupcache.Options{
+		Workspace:    workspace,
+		Name:         "files",
+		PurgeExpired: purgeExpired,
+		CacheBytes:   app.groupCacheSizeBytes,
+		Getter:       getter,
+	}
+
 	// https://talks.golang.org/2013/oscon-dl.slide#46
 	//
 	// 64 MB max per-node memory usage
-	app.cache = groupcache.NewGroupWithWorkspace(workspace, "files",
-		purgeExpired, app.groupCacheSizeBytes, getter)
+	app.cache = groupcache.NewGroupWithWorkspace(groupcacheOptions)
 }
