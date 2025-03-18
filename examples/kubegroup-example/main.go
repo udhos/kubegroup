@@ -13,6 +13,7 @@ import (
 
 	"github.com/modernprogram/groupcache/v2"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/udhos/kubegroup/kubegroup"
 )
@@ -46,8 +47,8 @@ func main() {
 	//
 	// metrics
 	//
-	app.registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
-	app.registry.MustRegister(prometheus.NewGoCollector())
+	app.registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	app.registry.MustRegister(collectors.NewGoCollector())
 
 	app.serverMain = &http.Server{Addr: app.listenAddr, Handler: mux}
 
