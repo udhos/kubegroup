@@ -76,7 +76,7 @@ func startGroupcache(app *application) {
 	//
 
 	getter := groupcache.GetterFunc(
-		func(_ /*ctx*/ context.Context, filePath string, dest groupcache.Sink) error {
+		func(_ /*ctx*/ context.Context, filePath string, dest groupcache.Sink, _ *groupcache.Info) error {
 
 			log.Printf("cache miss, loading file: %s (ttl:%v)",
 				filePath, app.groupCacheExpire)
@@ -100,11 +100,11 @@ func startGroupcache(app *application) {
 	const purgeExpired = true
 
 	groupcacheOptions := groupcache.Options{
-		Workspace:    workspace,
-		Name:         "files",
-		PurgeExpired: purgeExpired,
-		CacheBytes:   app.groupCacheSizeBytes,
-		Getter:       getter,
+		Workspace:       workspace,
+		Name:            "files",
+		PurgeExpired:    purgeExpired,
+		CacheBytesLimit: app.groupCacheSizeBytes,
+		Getter:          getter,
 	}
 
 	// https://talks.golang.org/2013/oscon-dl.slide#46

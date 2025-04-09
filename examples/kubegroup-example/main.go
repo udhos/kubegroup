@@ -89,7 +89,7 @@ func routeHandler(w http.ResponseWriter, r *http.Request, app *application) {
 	filePath = strings.TrimPrefix(filePath, "/")
 
 	var data []byte
-	errGet := app.cache.Get(r.Context(), filePath, groupcache.AllocatingByteSliceSink(&data))
+	errGet := app.cache.Get(r.Context(), filePath, groupcache.AllocatingByteSliceSink(&data), nil)
 	if errGet != nil {
 		log.Printf("routeHandler: %s %s: cache error: %v", r.Method, r.URL.Path, errGet)
 		http.Error(w, errGet.Error(), 500)
