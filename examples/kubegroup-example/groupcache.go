@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/modernprogram/groupcache/v2"
+	"github.com/udhos/groupcache_datadog/exporter"
 	"github.com/udhos/kube/kubeclient"
 	"github.com/udhos/kubegroup/kubegroup"
 )
 
-func startGroupcache(app *application) {
+func startGroupcache(app *application, dogstatsd, mockDogstatsd bool) {
 
 	//
 	// create groupcache pool
@@ -53,15 +54,35 @@ func startGroupcache(app *application) {
 		log.Fatalf("startGroupcache: kubeclient: %v", errClientset)
 	}
 
+	var dogstatsdClient kubegroup.DogstatsdClient
+	if dogstatsd {
+		if mockDogstatsd {
+			dogstatsdClient = &kubegroup.DogstatsdClientMock{}
+		} else {
+			c, errClient := exporter.NewDatadogClient(exporter.DatadogClientOptions{
+				Namespace: "kubegroup",
+				Debug:     debug,
+			})
+			if errClient != nil {
+				log.Fatalf("dogstatsd client: %v", errClient)
+			}
+			dogstatsdClient = c
+		}
+	}
+
 	options := kubegroup.Options{
 		Client:                clientset,
 		Pool:                  pool,
 		LabelSelector:         "app=miniapi",
 		GroupCachePort:        app.groupCachePort,
 		Debug:                 debug,
-		MetricsRegisterer:     app.registry,
-		MetricsGatherer:       app.registry,
+		DogstatsdClient:       dogstatsdClient,
 		ForceNamespaceDefault: true,
+	}
+
+	if app.registry != nil {
+		options.MetricsRegisterer = app.registry
+		options.MetricsGatherer = app.registry
 	}
 
 	group, errGroup := kubegroup.UpdatePeers(options)

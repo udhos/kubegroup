@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -34,6 +35,16 @@ type application struct {
 
 func main() {
 
+	var dogstatsd bool
+	var prom bool
+	var mockDogstatsd bool
+	flag.BoolVar(&dogstatsd, "dogstatsd", true, "enable dogstatsd")
+	flag.BoolVar(&prom, "prom", true, "enable prometheus")
+	flag.BoolVar(&mockDogstatsd, "mockDogstatsd", true, "mock dogstatsd")
+	flag.Parse()
+	log.Printf("dogstatds=%t prom=%t mockDogstatsd=%t",
+		dogstatsd, prom, mockDogstatsd)
+
 	mux := http.NewServeMux()
 
 	app := &application{
@@ -41,24 +52,33 @@ func main() {
 		groupCachePort:      ":5000",
 		groupCacheSizeBytes: 1_000_000,        // limit cache at 1 MB
 		groupCacheExpire:    60 * time.Second, // cache TTL at 60s
-		registry:            prometheus.NewRegistry(),
 	}
 
 	//
 	// metrics
 	//
-	app.registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
-	app.registry.MustRegister(collectors.NewGoCollector())
+
+	if prom {
+		app.registry = prometheus.NewRegistry()
+
+		app.registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+		app.registry.MustRegister(collectors.NewGoCollector())
+
+		mux.Handle("/metrics", app.metricsHandler())
+	}
+
+	//
+	// main server
+	//
+
+	startGroupcache(app, dogstatsd, mockDogstatsd)
 
 	app.serverMain = &http.Server{Addr: app.listenAddr, Handler: mux}
-
-	startGroupcache(app)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter,
 		r *http.Request) {
 		routeHandler(w, r, app)
 	})
-	mux.Handle("/metrics", app.metricsHandler())
 
 	go func() {
 		//

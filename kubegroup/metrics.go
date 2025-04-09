@@ -1,21 +1,50 @@
 package kubegroup
 
 import (
+	"fmt"
+	"log/slog"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type metrics struct {
-	//registerer prometheus.Registerer
-	//gatherer   prometheus.Gatherer
-	peers  prometheus.Gauge
-	events prometheus.Counter
+	peers           prometheus.Gauge
+	events          prometheus.Counter
+	dogstatsdClient DogstatsdClient
+	sampleRate      float64
+	tags            []string
 }
 
-func newMetrics(namespace string, registerer prometheus.Registerer) *metrics {
+func (m *metrics) update(peers int) {
+	if m.events != nil {
+		m.events.Inc()
+	}
+	if m.peers != nil {
+		m.peers.Set(float64(peers))
+	}
+
+	if m.dogstatsdClient != nil {
+		if err := m.dogstatsdClient.Count("events", 1, m.tags, m.sampleRate); err != nil {
+			slog.Error(fmt.Sprintf("exportCount: error: %v", err))
+		}
+		if err := m.dogstatsdClient.Gauge("peers", float64(peers), m.tags, m.sampleRate); err != nil {
+			slog.Error(fmt.Sprintf("exportGauge: error: %v", err))
+		}
+	}
+}
+
+func newMetrics(namespace string, registerer prometheus.Registerer,
+	client DogstatsdClient, dogstatsdExtraTags []string) *metrics {
+
 	m := &metrics{
-		//registerer: registerer,
-		//gatherer:   options.MetricsGatherer,
+		dogstatsdClient: client,
+		tags:            dogstatsdExtraTags,
+		sampleRate:      1,
+	}
+
+	if registerer == nil {
+		return m
 	}
 
 	const subsystem = "kubegroup"

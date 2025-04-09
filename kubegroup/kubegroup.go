@@ -106,14 +106,32 @@ type Options struct {
 	// MetricsNamespace provides optional namespace for prometheus metrics.
 	MetricsNamespace string
 
-	// MetricsRegisterer is required registerer for prometheus metrics.
+	// MetricsRegisterer is registerer for prometheus metrics.
 	MetricsRegisterer prometheus.Registerer
 
-	// MetricsRegisterer is required gatherer for prometheus metrics.
+	// MetricsRegisterer is gatherer for prometheus metrics.
 	MetricsGatherer prometheus.Gatherer
+
+	// DogstatsdClient optionally sends metrics to Datadog Dogstatsd.
+	DogstatsdClient DogstatsdClient
+
+	DogstatsdExtraTags []string
 
 	// ForceNamespaceDefault is used only for testing.
 	ForceNamespaceDefault bool
+}
+
+// DogstatsdClient is implemented by *statsd.Client.
+// Simplified version of statsd.ClientInterface.
+type DogstatsdClient interface {
+	// Gauge measures the value of a metric at a particular time.
+	Gauge(name string, value float64, tags []string, rate float64) error
+
+	// Count tracks how many times something happened per second.
+	Count(name string, value int64, tags []string, rate float64) error
+
+	// Close the client connection.
+	Close() error
 }
 
 // Group holds context for kubegroup.
@@ -155,12 +173,6 @@ func UpdatePeers(options Options) (*Group, error) {
 	if options.GroupCachePort == "" {
 		panic("GroupCachePort is empty")
 	}
-	if options.MetricsRegisterer == nil {
-		panic("MetricsRegisterer is nil")
-	}
-	if options.MetricsGatherer == nil {
-		panic("MetricsGatherer is nil")
-	}
 	if options.LabelSelector == "" {
 		panic("LabelSelector is empty")
 	}
@@ -187,8 +199,10 @@ func UpdatePeers(options Options) (*Group, error) {
 
 	group := &Group{
 		options: options,
-		m:       newMetrics(options.MetricsNamespace, options.MetricsRegisterer),
-		myAddr:  myAddr,
+		m: newMetrics(options.MetricsNamespace,
+			options.MetricsRegisterer, options.DogstatsdClient,
+			options.DogstatsdExtraTags),
+		myAddr: myAddr,
 	}
 
 	optionsInformer := podinformer.Options{
@@ -263,6 +277,27 @@ func (g *Group) onUpdate(pods []podinformer.Pod) {
 		g.options.Pool.Set(peers...)
 	}
 
-	g.m.events.Inc()
-	g.m.peers.Set(float64(size))
+	g.m.update(size)
+}
+
+// DogstatsdClientMock mocks the interface DogstatsdClient.
+type DogstatsdClientMock struct{}
+
+// Gauge measures the value of a metric at a particular time.
+func (m *DogstatsdClientMock) Gauge(name string, value float64, tags []string, rate float64) error {
+	log.Printf("DogstatsdClientMock.Gauge: name=%s value=%f tags=%v rate=%f",
+		name, value, tags, rate)
+	return nil
+}
+
+// Count tracks how many times something happened per second.
+func (m *DogstatsdClientMock) Count(name string, value int64, tags []string, rate float64) error {
+	log.Printf("DogstatsdClientMock.Count: name=%s value=%d tags=%v rate=%f",
+		name, value, tags, rate)
+	return nil
+}
+
+// Close the client connection.
+func (m *DogstatsdClientMock) Close() error {
+	return nil
 }

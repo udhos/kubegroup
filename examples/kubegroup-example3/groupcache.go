@@ -8,11 +8,12 @@ import (
 
 	"github.com/groupcache/groupcache-go/v3"
 	"github.com/groupcache/groupcache-go/v3/transport"
+	"github.com/udhos/groupcache_datadog/exporter"
 	"github.com/udhos/kube/kubeclient"
 	"github.com/udhos/kubegroup/kubegroup"
 )
 
-func startGroupcache(app *application) {
+func startGroupcache(app *application, dogstatsd, mockDogstatsd bool) {
 
 	//
 	// create groupcache instance
@@ -39,18 +40,38 @@ func startGroupcache(app *application) {
 	clientsetOpt := kubeclient.Options{DebugLog: debug}
 	clientset, errClientset := kubeclient.New(clientsetOpt)
 	if errClientset != nil {
-		log.Fatalf("kubeclient: %v", errClientset)
+		log.Fatalf("startGroupcache: kubeclient: %v", errClientset)
+	}
+
+	var dogstatsdClient kubegroup.DogstatsdClient
+	if dogstatsd {
+		if mockDogstatsd {
+			dogstatsdClient = &kubegroup.DogstatsdClientMock{}
+		} else {
+			c, errClient := exporter.NewDatadogClient(exporter.DatadogClientOptions{
+				Namespace: "kubegroup",
+				Debug:     debug,
+			})
+			if errClient != nil {
+				log.Fatalf("dogstatsd client: %v", errClient)
+			}
+			dogstatsdClient = c
+		}
 	}
 
 	options := kubegroup.Options{
 		Client:                clientset,
 		Peers:                 daemon,
 		LabelSelector:         "app=miniapi",
-		GroupCachePort:        app.groupCachePort, // ":5000"
+		GroupCachePort:        app.groupCachePort,
 		Debug:                 debug,
-		MetricsRegisterer:     app.registry,
-		MetricsGatherer:       app.registry,
+		DogstatsdClient:       dogstatsdClient,
 		ForceNamespaceDefault: true,
+	}
+
+	if app.registry != nil {
+		options.MetricsRegisterer = app.registry
+		options.MetricsGatherer = app.registry
 	}
 
 	group, errGroup := kubegroup.UpdatePeers(options)

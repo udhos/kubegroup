@@ -8,12 +8,15 @@ require (
 	github.com/groupcache/groupcache-go/v3 v3.2.0
 	github.com/modernprogram/groupcache/v2 v2.7.1
 	github.com/prometheus/client_golang v1.22.0
+	github.com/udhos/groupcache_datadog v0.0.3
 	github.com/udhos/kube v1.0.4
 	github.com/udhos/kubepodinformer v1.0.3
 	k8s.io/client-go v0.32.3
 )
 
 require (
+	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -41,6 +44,7 @@ require (
 	github.com/prometheus/procfs v0.16.0 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/udhos/groupcache_exporter v1.1.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/oauth2 v0.29.0 // indirect
