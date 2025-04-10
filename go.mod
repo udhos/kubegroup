@@ -1,14 +1,12 @@
 module github.com/udhos/kubegroup
 
-go 1.23.8 // minimum
-
-toolchain go1.24.2 // preferred
+go 1.24.2
 
 require (
 	github.com/groupcache/groupcache-go/v3 v3.2.0
-	github.com/modernprogram/groupcache/v2 v2.7.1
+	github.com/modernprogram/groupcache/v2 v2.7.2
 	github.com/prometheus/client_golang v1.22.0
-	github.com/udhos/dogstatsdclient v0.0.1
+	github.com/udhos/dogstatsdclient v0.0.2
 	github.com/udhos/kube v1.0.4
 	github.com/udhos/kubepodinformer v1.0.3
 	k8s.io/client-go v0.32.3

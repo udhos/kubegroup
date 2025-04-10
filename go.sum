@@ -67,8 +67,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/modernprogram/groupcache/v2 v2.7.1 h1:q0VaOOniYsCGtyTA4YqTWdul1BAUOMoCXTNc8QxXX7I=
-github.com/modernprogram/groupcache/v2 v2.7.1/go.mod h1:2WTJaDNR2pbJ5I/2CxNYVqL5JcuPHBFFNMh4SjiAWTw=
+github.com/modernprogram/groupcache/v2 v2.7.2 h1:hXi5FStkh8GB2EFSTWSKCqFKQ3EjRw2+s4ez4SF1ckM=
+github.com/modernprogram/groupcache/v2 v2.7.2/go.mod h1:0t2HiBuXCy1TGoHTT2/nKYtnXmnKBR1671v9FL52OGg=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/onsi/ginkgo/v2 v2.21.0 h1:7rg/4f3rB88pb5obDgNZrNHrQ4e6WpjonchcpuBRnZM=
@@ -106,8 +106,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/udhos/dogstatsdclient v0.0.1 h1:AlrSeKRk6DI/9DoZiaDcyhETcJnLWZGOnKnBLwRmDN8=
-github.com/udhos/dogstatsdclient v0.0.1/go.mod h1:SGlnVGLUAMdf+MeXX3XbGvTu9L/vbPL+An87SeXCgbs=
+github.com/udhos/dogstatsdclient v0.0.2 h1:t1wVeB0IHURkS04WulyxG4I5yRZ8Za/VMhyT7gNJxaQ=
+github.com/udhos/dogstatsdclient v0.0.2/go.mod h1:SGlnVGLUAMdf+MeXX3XbGvTu9L/vbPL+An87SeXCgbs=
 github.com/udhos/kube v1.0.4 h1:K29UtnX5p+AjA8RcPfB3Y3hyHSlbJJp8af94yNq+0lw=
 github.com/udhos/kube v1.0.4/go.mod h1:MwPicQML0gvzFH+svkM5WyRaDcgstKNzUBTNFME9NoI=
 github.com/udhos/kubepodinformer v1.0.3 h1:TgLor50dD9TqgDa5kdoAhmwPu84M4QIGSgKvDNStImc=
