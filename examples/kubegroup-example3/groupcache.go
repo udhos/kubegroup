@@ -8,7 +8,7 @@ import (
 
 	"github.com/groupcache/groupcache-go/v3"
 	"github.com/groupcache/groupcache-go/v3/transport"
-	"github.com/udhos/groupcache_datadog/exporter"
+	"github.com/udhos/dogstatsdclient/dogstatsdclient"
 	"github.com/udhos/kube/kubeclient"
 	"github.com/udhos/kubegroup/kubegroup"
 )
@@ -48,7 +48,7 @@ func startGroupcache(app *application, dogstatsd, mockDogstatsd bool) {
 		if mockDogstatsd {
 			dogstatsdClient = &kubegroup.DogstatsdClientMock{}
 		} else {
-			c, errClient := exporter.NewDatadogClient(exporter.DatadogClientOptions{
+			c, errClient := dogstatsdclient.New(dogstatsdclient.Options{
 				Namespace: "kubegroup",
 				Debug:     debug,
 			})

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/modernprogram/groupcache/v2"
-	"github.com/udhos/groupcache_datadog/exporter"
+	"github.com/udhos/dogstatsdclient/dogstatsdclient"
 	"github.com/udhos/kube/kubeclient"
 	"github.com/udhos/kubegroup/kubegroup"
 )
@@ -59,7 +59,7 @@ func startGroupcache(app *application, dogstatsd, mockDogstatsd bool) {
 		if mockDogstatsd {
 			dogstatsdClient = &kubegroup.DogstatsdClientMock{}
 		} else {
-			c, errClient := exporter.NewDatadogClient(exporter.DatadogClientOptions{
+			c, errClient := dogstatsdclient.New(dogstatsdclient.Options{
 				Namespace: "kubegroup",
 				Debug:     debug,
 			})
