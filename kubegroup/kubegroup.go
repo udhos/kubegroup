@@ -117,6 +117,12 @@ type Options struct {
 
 	DogstatsdExtraTags []string
 
+	// DogstatsdTagHosnameKey defaults to "pod_name".
+	DogstatsdTagHosnameKey string
+
+	// DogstatsdDisableTagHostname prevents adding tag $DogstatsdTagHosnameKey:$hostname
+	DogstatsdDisableTagHostname bool
+
 	// ForceNamespaceDefault is used only for testing.
 	ForceNamespaceDefault bool
 }
@@ -175,6 +181,18 @@ func UpdatePeers(options Options) (*Group, error) {
 	}
 	if options.LabelSelector == "" {
 		panic("LabelSelector is empty")
+	}
+
+	if !options.DogstatsdDisableTagHostname {
+		if options.DogstatsdTagHosnameKey == "" {
+			options.DogstatsdTagHosnameKey = "pod_name"
+		}
+		hostname, err := os.Hostname()
+		if err != nil {
+			return nil, err
+		}
+		options.DogstatsdExtraTags = append(options.DogstatsdExtraTags,
+			fmt.Sprintf("%s:%s", options.DogstatsdTagHosnameKey, hostname))
 	}
 
 	if options.Logf == nil {

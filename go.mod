@@ -6,7 +6,7 @@ require (
 	github.com/groupcache/groupcache-go/v3 v3.2.0
 	github.com/modernprogram/groupcache/v2 v2.7.2
 	github.com/prometheus/client_golang v1.22.0
-	github.com/udhos/dogstatsdclient v0.0.2
+	github.com/udhos/dogstatsdclient v0.0.3
 	github.com/udhos/kube v1.0.4
 	github.com/udhos/kubepodinformer v1.0.3
 	k8s.io/client-go v0.32.3
@@ -37,7 +37,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_model v0.6.1 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.63.0 // indirect
 	github.com/prometheus/procfs v0.16.0 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
@@ -60,6 +60,6 @@ require (
 	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
