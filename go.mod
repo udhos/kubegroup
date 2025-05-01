@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/groupcache/groupcache-go/v3 v3.2.0
-	github.com/modernprogram/groupcache/v2 v2.7.2
+	github.com/modernprogram/groupcache/v2 v2.7.6
 	github.com/prometheus/client_golang v1.22.0
 	github.com/udhos/dogstatsdclient v0.0.4
 	github.com/udhos/kube v1.0.4

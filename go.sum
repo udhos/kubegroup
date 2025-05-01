@@ -63,8 +63,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/modernprogram/groupcache/v2 v2.7.2 h1:hXi5FStkh8GB2EFSTWSKCqFKQ3EjRw2+s4ez4SF1ckM=
-github.com/modernprogram/groupcache/v2 v2.7.2/go.mod h1:0t2HiBuXCy1TGoHTT2/nKYtnXmnKBR1671v9FL52OGg=
+github.com/modernprogram/groupcache/v2 v2.7.6 h1:fkUbVVyg8vGF7XBeZ6CF9+XJoLUSiJvfkQCL/NMOIfU=
+github.com/modernprogram/groupcache/v2 v2.7.6/go.mod h1:0t2HiBuXCy1TGoHTT2/nKYtnXmnKBR1671v9FL52OGg=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/onsi/ginkgo/v2 v2.21.0 h1:7rg/4f3rB88pb5obDgNZrNHrQ4e6WpjonchcpuBRnZM=
