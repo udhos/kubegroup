@@ -109,9 +109,6 @@ type Options struct {
 	// MetricsRegisterer is registerer for prometheus metrics.
 	MetricsRegisterer prometheus.Registerer
 
-	// MetricsRegisterer is gatherer for prometheus metrics.
-	MetricsGatherer prometheus.Gatherer
-
 	// DogstatsdClient optionally sends metrics to Datadog Dogstatsd.
 	DogstatsdClient DogstatsdClient
 

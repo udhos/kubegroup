@@ -82,7 +82,6 @@ func startGroupcache(app *application, dogstatsd, mockDogstatsd bool) {
 
 	if app.registry != nil {
 		options.MetricsRegisterer = app.registry
-		options.MetricsGatherer = app.registry
 	}
 
 	group, errGroup := kubegroup.UpdatePeers(options)
