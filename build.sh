@@ -3,10 +3,13 @@
 go install golang.org/x/vuln/cmd/govulncheck@latest
 go install golang.org/x/tools/cmd/deadcode@latest
 go install github.com/mgechev/revive@latest
+go install honnef.co/go/tools/cmd/staticcheck@latest
 
 gofmt -s -w .
 
 revive ./...
+
+staticcheck ./...
 
 gocyclo -over 15 .
 
