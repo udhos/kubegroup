@@ -111,9 +111,7 @@ func startGroupcache(app *application, dogstatsd, mockDogstatsd bool) {
 				expire = time.Now().Add(app.groupCacheExpire)
 			}
 
-			dest.SetBytes(data, expire)
-
-			return nil
+			return dest.SetBytes(data, expire)
 		},
 	)
 
