@@ -5,11 +5,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"maps"
 	"net"
 	"os"
 
 	"github.com/groupcache/groupcache-go/v3/transport/peer"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/udhos/aws-emf/emf"
+	"github.com/udhos/cloudwatchlog/cwlog"
 	"github.com/udhos/kubepodinformer/podinformer"
 	"k8s.io/client-go/kubernetes"
 )
@@ -112,6 +115,7 @@ type Options struct {
 	// DogstatsdClient optionally sends metrics to Datadog Dogstatsd.
 	DogstatsdClient DogstatsdClient
 
+	// DogstatsdExtraTags optionally adds tags do Dogstatsd metrics.
 	DogstatsdExtraTags []string
 
 	// DogstatsdTagHosnameKey defaults to "pod_name".
@@ -119,6 +123,23 @@ type Options struct {
 
 	// DogstatsdDisableTagHostname prevents adding tag $DogstatsdTagHosnameKey:$hostname
 	DogstatsdDisableTagHostname bool
+
+	// EmfEnable optionally enables AWS CloudWatch EMF metrics.
+	EmfEnable bool
+
+	// EmfDimensions optionally adds dimensions to AWS CloudWatch EMF metrics.
+	EmfDimensions map[string]string
+
+	// EmfDimensionHosnameKey defaults to "pod_name".
+	EmfDimensionHosnameKey string
+
+	// EmfDisableDimensionHostname prevents adding tag $EmfDimensionHosnameKey:$hostname
+	EmfDisableDimensionHostname bool
+
+	// EmfCloudWatchLogsClient optionally sends AWS CloudWatch EMF metrics directly to CloudWatch logs.
+	// If EmfCloudWatchLogsClient is left undefined, AWS CloudWatch EMF metrics are issued to standard output.
+	// EmfCloudWatchLogsClient can be created by cwlog.New().
+	EmfCloudWatchLogsClient *cwlog.Log
 
 	// ForceNamespaceDefault is used only for testing.
 	ForceNamespaceDefault bool
@@ -212,11 +233,34 @@ func UpdatePeers(options Options) (*Group, error) {
 		return nil, errAddr
 	}
 
+	//
+	// enable AWS CloudWatch EMF metrics
+	//
+	var emfMetric *emf.Metric
+	var emfDimensions map[string]string
+	if options.EmfEnable {
+		emfMetric = emf.New(emf.Options{})
+		emfDimensions = map[string]string{}
+		maps.Copy(emfDimensions, options.EmfDimensions)
+
+		if !options.EmfDisableDimensionHostname {
+			if options.EmfDimensionHosnameKey == "" {
+				options.EmfDimensionHosnameKey = "pod_name"
+			}
+			hostname, err := os.Hostname()
+			if err != nil {
+				return nil, err
+			}
+			emfDimensions[options.EmfDimensionHosnameKey] = hostname
+		}
+	}
+
 	group := &Group{
 		options: options,
 		m: newMetrics(options.MetricsNamespace,
 			options.MetricsRegisterer, options.DogstatsdClient,
-			options.DogstatsdExtraTags),
+			options.DogstatsdExtraTags, emfMetric, emfDimensions,
+			options.EmfCloudWatchLogsClient),
 		myAddr: myAddr,
 	}
 

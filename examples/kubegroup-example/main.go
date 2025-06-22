@@ -38,12 +38,16 @@ func main() {
 	var dogstatsd bool
 	var prom bool
 	var mockDogstatsd bool
+	var emf bool
+	var emfCw bool
 	flag.BoolVar(&dogstatsd, "dogstatsd", true, "enable dogstatsd")
 	flag.BoolVar(&prom, "prom", true, "enable prometheus")
 	flag.BoolVar(&mockDogstatsd, "mockDogstatsd", true, "mock dogstatsd")
+	flag.BoolVar(&emf, "emf", false, "enable aws cloudwatch emf metrics")
+	flag.BoolVar(&emfCw, "emfCw", false, "send aws cloudwatch emf metrics directly to cloudwatch logs")
 	flag.Parse()
-	log.Printf("dogstatds=%t prom=%t mockDogstatsd=%t",
-		dogstatsd, prom, mockDogstatsd)
+	log.Printf("dogstatds=%t prom=%t mockDogstatsd=%t emf=%t emfCw=%t",
+		dogstatsd, prom, mockDogstatsd, emf, emfCw)
 
 	mux := http.NewServeMux()
 
@@ -71,7 +75,7 @@ func main() {
 	// main server
 	//
 
-	startGroupcache(app, dogstatsd, mockDogstatsd)
+	startGroupcache(app, dogstatsd, mockDogstatsd, emf, emfCw)
 
 	app.serverMain = &http.Server{Addr: app.listenAddr, Handler: mux}
 

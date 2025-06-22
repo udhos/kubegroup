@@ -7,13 +7,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/modernprogram/groupcache/v2"
+	"github.com/udhos/cloudwatchlog/cwlog"
 	"github.com/udhos/dogstatsdclient/dogstatsdclient"
 	"github.com/udhos/kube/kubeclient"
 	"github.com/udhos/kubegroup/kubegroup"
 )
 
-func startGroupcache(app *application, dogstatsd, mockDogstatsd bool) {
+func startGroupcache(app *application, dogstatsd, mockDogstatsd, emfEnable, emfSend bool) {
 
 	//
 	// create groupcache pool
@@ -82,6 +84,33 @@ func startGroupcache(app *application, dogstatsd, mockDogstatsd bool) {
 
 	if app.registry != nil {
 		options.MetricsRegisterer = app.registry
+	}
+
+	if emfEnable {
+		//
+		// enable AWS CloudWatch EMF metrics
+		//
+		appName := "kubegroup-example"
+		options.EmfEnable = true
+		options.EmfDimensions = map[string]string{"app": appName}
+		if emfSend {
+			//
+			// send AWS CloudWatch EMF metrics directly to CloudWatch logs
+			//
+			awsConfig, errConfig := config.LoadDefaultConfig(context.TODO())
+			if errConfig != nil {
+				log.Fatalf("emf aws config error: %v", errConfig)
+			}
+			client, err := cwlog.New(cwlog.Options{
+				AwsConfig:       awsConfig,
+				LogGroup:        "/kubegroup/" + appName,
+				RetentionInDays: 7,
+			})
+			if err != nil {
+				log.Fatalf("emf cloudwatch logs client error: %v", err)
+			}
+			options.EmfCloudWatchLogsClient = client
+		}
 	}
 
 	group, errGroup := kubegroup.UpdatePeers(options)
