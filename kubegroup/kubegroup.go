@@ -8,6 +8,7 @@ import (
 	"maps"
 	"net"
 	"os"
+	"time"
 
 	"github.com/groupcache/groupcache-go/v3/transport/peer"
 	"github.com/prometheus/client_golang/prometheus"
@@ -143,6 +144,9 @@ type Options struct {
 
 	// ForceNamespaceDefault is used only for testing.
 	ForceNamespaceDefault bool
+
+	// DebounceDelay is the delay for debouncing peer updates. Default is 2 seconds.
+	DebounceDelay time.Duration
 }
 
 // DogstatsdClient is implemented by *statsd.Client.
@@ -270,6 +274,7 @@ func UpdatePeers(options Options) (*Group, error) {
 		LabelSelector: options.LabelSelector,
 		OnUpdate:      group.onUpdate,
 		DebugLog:      options.Debug,
+		DebounceDelay: options.DebounceDelay,
 	}
 
 	group.informer = podinformer.New(optionsInformer)
