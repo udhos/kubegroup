@@ -11,7 +11,7 @@ require (
 	github.com/udhos/cloudwatchlog v1.0.2
 	github.com/udhos/dogstatsdclient v1.1.3
 	github.com/udhos/kube v1.0.10
-	github.com/udhos/kubepodinformer v1.1.1
+	github.com/udhos/kubepodinformer v1.1.2
 	k8s.io/client-go v0.36.0
 )
 
@@ -67,7 +67,7 @@ require (
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/udhos/debounce v0.0.1 // indirect
+	github.com/udhos/debounce v0.0.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
