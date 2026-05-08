@@ -11,7 +11,7 @@ require (
 	github.com/udhos/cloudwatchlog v1.0.2
 	github.com/udhos/dogstatsdclient v1.1.3
 	github.com/udhos/kube v1.0.10
-	github.com/udhos/kubepodinformer v1.1.2
+	github.com/udhos/kubepodinformer v1.1.3
 	k8s.io/client-go v0.36.0
 )
 
@@ -67,7 +67,7 @@ require (
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/udhos/debounce v0.0.2 // indirect
+	github.com/udhos/debounce v0.0.3 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
@@ -88,8 +88,8 @@ require (
 	k8s.io/api v0.36.0 // indirect
 	k8s.io/apimachinery v0.36.0 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20260505163821-33341827b392 // indirect
-	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5 // indirect
+	k8s.io/kube-openapi v0.0.0-20260507235316-19c3011e7fa0 // indirect
+	k8s.io/utils v0.0.0-20260507154919-ff6756f316d2 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.0 // indirect
